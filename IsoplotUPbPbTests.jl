@@ -2,17 +2,17 @@
 using DataFrames
 using CSV
 using Isoplot
-zrn20SD06c = DataFrame(CSV.File("/home/scdyer/Documents/Waterloo/Julia/Plotting/ZrnLaserPlots/UPb/20SD06_cores.csv"))
-zrn20SD06r = DataFrame(CSV.File("/home/scdyer/Documents/Waterloo/Julia/Plotting/ZrnLaserPlots/UPb/20SD06_rims.csv"))
+zrn20SD06c = DataFrame(CSV.File("ZrnLaserPlots/UPb/20SD06_cores.csv"))
+zrn20SD06r = DataFrame(CSV.File("ZrnLaserPlots/UPb/20SD06_rims.csv"))
 
-zrn20SD17Ac = DataFrame(CSV.File("/home/scdyer/Documents/Waterloo/Julia/Plotting/ZrnLaserPlots/UPb/20SD17A_cores.csv"))
-zrn20SD17Ar = DataFrame(CSV.File("/home/scdyer/Documents/Waterloo/Julia/Plotting/ZrnLaserPlots/UPb/20SD17A_rims.csv"))
+zrn20SD17Ac = DataFrame(CSV.File("ZrnLaserPlots/UPb/20SD17A_cores.csv"))
+zrn20SD17Ar = DataFrame(CSV.File("ZrnLaserPlots/UPb/20SD17A_rims.csv"))
 
-zrn21SD68c = DataFrame(CSV.File("/home/scdyer/Documents/Waterloo/Julia/Plotting/ZrnLaserPlots/UPb/21SD68_cores.csv"))
-zrn21SD68r = DataFrame(CSV.File("/home/scdyer/Documents/Waterloo/Julia/Plotting/ZrnLaserPlots/UPb/21SD68_rims.csv"))
+zrn21SD68c = DataFrame(CSV.File("ZrnLaserPlots/UPb/21SD68_cores.csv"))
+zrn21SD68r = DataFrame(CSV.File("ZrnLaserPlots/UPb/21SD68_rims.csv"))
 
-zrn22SD55Ec = DataFrame(CSV.File("/home/scdyer/Documents/Waterloo/Julia/Plotting/ZrnLaserPlots/UPb/22SD55E_cores.csv"))
-zrn22SD55Er = DataFrame(CSV.File("/home/scdyer/Documents/Waterloo/Julia/Plotting/ZrnLaserPlots/UPb/22SD55E_rims.csv"))
+zrn22SD55Ec = DataFrame(CSV.File("ZrnLaserPlots/UPb/22SD55E_cores.csv"))
+zrn22SD55Er = DataFrame(CSV.File("ZrnLaserPlots/UPb/22SD55E_rims.csv"))
 
 # fig = Figure(;size = (800,800))
 rimdf = [zrn20SD06r zrn20SD17Ar; zrn21SD68r zrn22SD55Er]

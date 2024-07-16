@@ -49,7 +49,7 @@ function plotProfile(probeLine::DataFrame, ax::Axis,fig::Figure,fileName::String
     save("ProbePlots//"*fileName*".svg",fig)
     #
 end
-probeData = DataFrame(CSV.File(raw"C:\Users\Sabas\OneDrive - University of Waterloo\Documents\Waterloo\Probe\ZrnHf_Modified.csv"))
+probeData = DataFrame(CSV.File("../../Probe/ZrnHf_Modified.csv"))
 
 
 

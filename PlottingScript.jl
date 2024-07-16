@@ -1,9 +1,9 @@
 include("ICPMS_Plots.jl")
 
-Zrn20SD06_te = importData(raw"C:\Users\Sabas\OneDrive - University of Waterloo\Documents\Waterloo\LAICPMS\2022_03_03\220303_Sabastien_Zrc_AP\20SD06Zrn_NoOutliersB.csv",3)
-Zrn20SD06_upb = importData(raw"C:\Users\Sabas\OneDrive - University of Waterloo\Documents\Waterloo\LAICPMS\2022_09_02_LASS\20SD06_Zrn_NoOutliers.csv",4)
-Zrn21SD68 = importData(raw"C:\Users\Sabas\OneDrive - University of Waterloo\Documents\Waterloo\LAICPMS\2022_09_02_LASS\21SD68_Zrn_NoOutliers.csv",4)
-Zrn22SD55B = importData(raw"C:\Users\Sabas\OneDrive - University of Waterloo\Documents\Waterloo\LAICPMS\2022_09_02_LASS\22SD55B_Zrn_NoOutliers.csv",4)
+Zrn20SD06_te = importData("../../LAICPMS/2022_03_03/220303_Sabastien_Zrc_AP/20SD06Zrn_NoOutliersB.csv",3)
+Zrn20SD06_upb = importData("../../LAICPMS/2022_09_02_LASS/20SD06_Zrn_NoOutliers.csv",4)
+Zrn21SD68 = importData("../../LAICPMS/2022_09_02_LASS/21SD68_Zrn_NoOutliers.csv",4)
+Zrn22SD55B = importData("../../LAICPMS/2022_09_02_LASS/22SD55B_Zrn_NoOutliers.csv",4)
 
 
 XSCALING = :log10
