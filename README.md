@@ -1,0 +1,2 @@
+# Julia Plotting Scripts
+This is just a collection of plotting scripts that I have put together in Julia. These aren't really intended for use by anyone but myself and there is an obvious different in quality seen throughout these scripts. One highlight is the ``InteractivePlots.jl`` script which is made to interactively process data spat out from Iolite. Maybe one day I will distribute that as a package.
