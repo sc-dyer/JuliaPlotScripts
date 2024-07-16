@@ -8,3 +8,5 @@
 *.csv
 *.svg
 /*/
+*.txt
+gmt.history
