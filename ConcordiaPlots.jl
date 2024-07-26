@@ -42,10 +42,17 @@ function make_concordia_plot!(ax::Axis,coredf::DataFrame,rimdf::DataFrame,t1,t2)
     
 end
 
-function inset_kde!(ax::Axis,coredf::DataFrame,rimdf::DataFrame)
+function inset_kde!(ax::Axis,coredf::DataFrame,rimdf::DataFrame; plotcore = true, plotrim = true)
     rim_concordant, rim_discordant = filterdiscordance(rimdf)
     core_concordant, core_discordant = filterdiscordance(coredf)
-    dates = [core_concordant[!,:PbPbAge];rim_concordant[!,:PbPbAge]]
+    
+    dates::Array{Float64} = rim_concordant[!,:PbPbAge]
+    if plotcore == true
+        dates = [dates;core_concordant[!,:PbPbAge]]
+        if plotrim == false
+            dates = core_concordant[!,:PbPbAge]
+        end
+    end
     density!(ax,dates, color = myColours[3])
     kernal = kde(dates)
     peaks = findmaxima(kernal.density)
@@ -57,17 +64,17 @@ end
 
 # GLMakie.activate!()
 set_theme!(myTheme)
-zrn20SD06c = DataFrame(CSV.File("ZrnLaserPlots/UPb/20SD06_cores.csv"))
-zrn20SD06r = DataFrame(CSV.File("ZrnLaserPlots/UPb/20SD06_rims.csv"))
+zrn20SD06c = DataFrame(CSV.File("ZrnLaserPlots/UPb_91500-com/20SD06_cores.csv"))
+zrn20SD06r = DataFrame(CSV.File("ZrnLaserPlots/UPb_91500-com/20SD06_rims.csv"))
 
-zrn20SD17Ac = DataFrame(CSV.File("ZrnLaserPlots/UPb/20SD17A_cores_ples.csv"))
-zrn20SD17Ar = DataFrame(CSV.File("ZrnLaserPlots/UPb/20SD17A_rims_ples.csv"))
+zrn20SD17Ac = DataFrame(CSV.File("ZrnLaserPlots/UPb_91500-com/20SD17A_cores.csv"))
+zrn20SD17Ar = DataFrame(CSV.File("ZrnLaserPlots/UPb_91500-com/20SD17A_rims.csv"))
 
-zrn21SD68c = DataFrame(CSV.File("ZrnLaserPlots/UPb/21SD68_cores_ples.csv"))
-zrn21SD68r = DataFrame(CSV.File("ZrnLaserPlots/UPb/21SD68_rims_ples.csv"))
+zrn21SD68c = DataFrame(CSV.File("ZrnLaserPlots/UPb_91500-com//21SD68_cores.csv"))
+zrn21SD68r = DataFrame(CSV.File("ZrnLaserPlots/UPb_91500-com//21SD68_rims.csv"))
 
-zrn22SD55Ec = DataFrame(CSV.File("ZrnLaserPlots/UPb/22SD55E_cores_ples.csv"))
-zrn22SD55Er = DataFrame(CSV.File("ZrnLaserPlots/UPb/22SD55E_rims_ples.csv"))
+zrn22SD55Ec = DataFrame(CSV.File("ZrnLaserPlots/UPb_91500-com/22SD55E_cores.csv"))
+zrn22SD55Er = DataFrame(CSV.File("ZrnLaserPlots/UPb_91500-com/22SD55E_rims.csv"))
 
 fig = Figure(;size = (800,800))
 rimdf = [zrn20SD06r zrn20SD17Ar; zrn21SD68r zrn22SD55Er]
@@ -129,7 +136,11 @@ for i in 1:2
                         valign = 0.15, 
                         backgroundcolor=:white)
 
-        inset_kde!(density_ax,coredf[i,j],rimdf[i,j])
+        if i == 2 && j == 1
+            inset_kde!(density_ax,coredf[i,j],rimdf[i,j], plotrim = false)
+        else
+            inset_kde!(density_ax,coredf[i,j],rimdf[i,j])
+        end
         xlims!(density_ax,800,1600)
         
     end
@@ -151,7 +162,7 @@ rowgap!(fig.layout,0)
 # text!(density_ax,peak_ages,peaks.heights,text=string.(Int.(round.(peak_ages))),color=:black,fontsize=8,offset = (5,0))
 # ylims!(density_ax,0,1.1*maximum(kernal.density))
 # scatter!(density_ax,maxima_helper.())
-CairoMakie.save("ConcordiaPlots/UPb_Plots_v4.svg",fig)
+CairoMakie.save("ConcordiaPlots/UPb_Plots_v7.svg",fig)
 # display(GLMakie.Screen(),fig)
 
 # GLMakie.save("ConcordiaPlots/UPb_Plots.png",fig,px_per_unit = 4)
