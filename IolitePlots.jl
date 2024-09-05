@@ -20,6 +20,8 @@ function toNorm(geochem::DataFrame,sampleName::String;templateNorm::DataFrame = 
 
     return newNorm
 end
+
+
 function NaNIfNotPositive(x::Number)
     if x <= 0
         return NaN
@@ -93,6 +95,7 @@ function normElem!(sampleData::DataFrame,normData::DataFrame,elem::String)
     normElem = filter([:Element]=>norm -> occursin(elem,norm),normData)[1,:Concentration]
     sampleData[!,Symbol(elem*"_norm")] = sampleData[!,Regex(elem*"\\d+.+mean")][!,1]/normElem
 end
+
 function sumREEs!(sampleData::DataFrame)
 
     sampleData[!,:TotalREE] = 
@@ -109,18 +112,36 @@ samplesWGeochem = ["21SD08-2","21SD08-3","23SD02B-1","21SD51D","22SD13C-2","22SD
     "23SD03H-3","23SD03J-2","23SD20B","23SD20C","23SD20D","23SD20F","23SD20G"]
 geochemSamples = ["21SD08","21SD08","23SD02B","21SD51D","22SD13C","22SD55B","22SD55D","22SD55E","20SD06","21SD68","23SD03C-1","23SD03C-5","23SD03E","23SD03H-Bulk",
     "23SD03J-2","23SD20B","23SD20C","23SD20D","23SD20F","23SD20G"]
+
 norm = DataFrame(CSV.File("chondrite.csv"))
-ampData = DataFrame(CSV.File(raw"C:\Users\Sabas\OneDrive - University of Waterloo\Documents\Waterloo\LAICPMS\AmphiboleData\Amphiboles.csv"))
-geochemData = DataFrame(CSV.File(raw"C:\Users\Sabas\OneDrive - University of Waterloo\Documents\Waterloo\Geochem\AmpSamples.csv"))
+ampData = DataFrame(CSV.File("../../LAICPMS/AmphiboleData/Amphiboles.csv"))
+geochemData = DataFrame(CSV.File("../../Geochem/AmpSamples.csv"))
 # calcEuAnomaly!(ampData,norm) 
 sumREEs!(ampData)
-# fig,ax = initSpiderFig("chondrite",norm)
-
-# sampleIndex = 1
-
+fig,ax = initSpiderFig("chondrite",norm)
+# sampleIndex = 14
 # plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
-fig2 = Figure(size = (1200,900))
-ax2 = Axis(fig2[1,1],yscale = log10,xscale = log10)
+# sampleIndex = 15
+# plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
+# for i in 19:23
+#     sampleIndex = i
+#     plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
+# end
+
+# for i in 24:24#lastindex(samples)-1
+#     sampleIndex = i
+#     plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
+# end
+
+for i in 9:11
+    sampleIndex = i
+    plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
+end
+
+
+
+# fig2 = Figure(size = (1200,900))
+# ax2 = Axis(fig2[1,1],yscale = log10,xscale = log10)
 
 # for sam in samples
 #     selAmp = filterSampleName(ampData,sam)
@@ -131,22 +152,22 @@ ax2 = Axis(fig2[1,1],yscale = log10,xscale = log10)
 #     scatter!(ax2,filterSampleName(ampData,sam)[!,:Y89_ppm_mean],filterSampleName(ampData,sam)[!,:Eu_EuA], label = sam)
 # end
 
-for i in 1:lastindex(samplesWGeochem)
+# for i in 1:lastindex(samplesWGeochem)
    
-    selAmp = filterSampleName(ampData,samplesWGeochem[i])
-    sampleNorm = toNorm(geochemData,geochemSamples[i])
-    calcEuAnomaly!(selAmp,sampleNorm)
-    normElem!(selAmp,sampleNorm,"Rb")
-    normElem!(selAmp,sampleNorm,"Sr")
-    normElem!(selAmp,sampleNorm,"Y")
-    # scatter!(ax2,filterSampleName(ampData,sam)[!,:TotalREE],filterSampleName(ampData,sam)[!,:Eu_EuA], label = sam)
-    # scatter!(ax2,selAmp[!,:Rb85_ppm_mean],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
-    # scatter!(ax2,selAmp[!,:Sr88_ppm_mean],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
-    # scatter!(ax2,selAmp[!,:Y89_ppm_mean],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
-    scatter!(ax2,selAmp[!,:Rb_norm],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
-    # scatter!(ax2,selAmp[!,:Sr_norm],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
-    # scatter!(ax2,selAmp[!,:Y_norm],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
+#     selAmp = filterSampleName(ampData,samplesWGeochem[i])
+#     sampleNorm = toNorm(geochemData,geochemSamples[i])
+#     calcEuAnomaly!(selAmp,sampleNorm)
+#     normElem!(selAmp,sampleNorm,"Rb")
+#     normElem!(selAmp,sampleNorm,"Sr")
+#     normElem!(selAmp,sampleNorm,"Y")
+#     # scatter!(ax2,filterSampleName(ampData,sam)[!,:TotalREE],filterSampleName(ampData,sam)[!,:Eu_EuA], label = sam)
+#     # scatter!(ax2,selAmp[!,:Rb85_ppm_mean],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
+#     # scatter!(ax2,selAmp[!,:Sr88_ppm_mean],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
+#     # scatter!(ax2,selAmp[!,:Y89_ppm_mean],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
+#     scatter!(ax2,selAmp[!,:Rb_norm],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
+#     # scatter!(ax2,selAmp[!,:Sr_norm],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
+#     # scatter!(ax2,selAmp[!,:Y_norm],selAmp[!,:Eu_EuA], label = samplesWGeochem[i])
 
-end
-fig2[1,2] = Legend(fig2,ax2,framevisible = false,merge = true)
-display(GLMakie.Screen(),fig2)
+# end
+# fig2[1,2] = Legend(fig2,ax2,framevisible = false,merge = true)
+# display(GLMakie.Screen(),fig2)

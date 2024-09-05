@@ -7,6 +7,7 @@ using FileIO
 using NativeFileDialog
 using JLD2
 using SkipNan
+using LinearRegression
 # using LaTeXStrings
 const MAX_SELECT = 20
 const FIG_SIZE = (1200,900)
@@ -51,12 +52,14 @@ mutable struct TransectData
 end
 
 TransectData() = TransectData(DataFrame(),DataFrame(),DataFrame(),DataFrame(),DataFrame(),Array{String}([]))
+
 function isVisible(fig::Figure)
     if length(fig.scene.current_screens) > 0
         return true
     end
     return false
 end
+
 function changeElem!(thisData::TransectData,ax::Axis,y::Observable,elem::String)
     y1 = Matrix(thisData.teData[!,Regex(elem*"\\d+")])
     y[] = vec(y1)
@@ -130,10 +133,10 @@ function initFig!(lineData::DataFrame, scanSpeed::Int,elem::String)
         fileName = pick_file(;filterlist="csv")
         instanceData.UPbData = DataFrame(CSV.File(fileName))
         addUPbData!(instanceData,scanSpeed,fig,ax,x)
-       
+        
     end
 
-    loadImg = Button(fig[1,1][4,1],label="Load zircon image",tellheight=false)
+    loadImg = Button(fig[1,1][5,1],label="Load zircon image",tellheight=false)
     selStarts = Observable(Float64[])
     selStops = Observable(Float64[])
     imgFig = Figure()
@@ -145,15 +148,15 @@ function initFig!(lineData::DataFrame, scanSpeed::Int,elem::String)
 
     sFig, sAx = initSpiderFig("chondrite")
     isoFig, isoAx = initIsoplotFig(t1 = 800, t2 = 1600)
-    initRangeSelect!(ax,fig,instanceData,sAx,sFig,"Chondrite.csv",selStarts,selStops,isoplotAx=isoAx, isoplotFig = isoFig)
+    initRangeSelect!(ax,fig,instanceData,sAx,sFig,"chondrite.csv",selStarts,selStops,isoplotAx=isoAx, isoplotFig = isoFig)
 
-    saveState = Button(fig[1,1][5,1],label = "Save state", tellheight=false)
+    # saveState = Button(fig[1,1][6,1],label = "Save state", tellheight=false)
     expData = Button(fig[1,1][6,1],label = "Export data", tellheight = false)
 
-    on(saveState.clicks) do clicks
-        fileName = save_dialog("Save the current figures",GtkNullContainer(),(GtkFileFilter("*.jld2")))
-        jldsave(fileName;fig,sFig,isoFig,imgFig,instanceData)
-    end
+    # on(saveState.clicks) do clicks
+    #     fileName = save_dialog("Save the current figures",GtkNullContainer(),(GtkFileFilter("*.jld2")))
+    #     jldsave(fileName;fig,sFig,isoFig,imgFig,instanceData)
+    # end
 
     on(expData.clicks) do clicks
         dir = pick_folder()
@@ -168,15 +171,22 @@ function initFig!(lineData::DataFrame, scanSpeed::Int,elem::String)
             GLMakie.save(dir*"/Isoplot.png",isoFig)
             GLMakie.save(dir*"/ZrnImage.png",imgFig)
         end
+        rescaleUPb
     end
     return fig,ax, x, y
 end
 
-function changeAxisVar!(lineData::DataFrame,ax::Axis,y::Observable,varName::String)
+function changeAxisVar!(lineData::DataFrame,ax::Axis,y::Observable,varName::String, altData::DataFrame)
     y1 =lineData[!,varName]
     y[] = Vector(y1)
     ax.ylabel = varName
-    ylims!(ax,0,mean(skipnan(y1))*2)
+    if occursin("rescaled",varName)
+        element = match(r"[^_]",varName).match
+        yalt = altData[!,Regex(element)]
+        ylims!(ax,0,maximum(yalt[!,1]))
+    else
+        ylims!(ax,0,mean(skipnan(y1))*2)
+    end
 end
 
 function adjustXVar(x::Observable,xAdj::Float64)
@@ -212,7 +222,7 @@ function addUPbData!(thisData::TransectData,scanSpeed::Int,fig::Figure,teAx::Axi
         menu,tellheight=false
     )
     on(menu.selection) do s
-        changeAxisVar!(thisData.UPbData,ax2,y,s)
+        changeAxisVar!(thisData.UPbData,ax2,y,s,thisData.teData)
     end
 
     #Slider set up
@@ -235,6 +245,20 @@ function addUPbData!(thisData::TransectData,scanSpeed::Int,fig::Figure,teAx::Axi
     
     lines!(ax2,x,y,linewidth = 2, color = Cycled(2))
 
+    rescaleUPb = Button(fig[1,1][4,1],label = "Rescale U and Th", tellheight=false)
+    on(rescaleUPb.clicks) do clicks
+
+        rescale_UTh!(thisData.teData, thisData.UPbData)
+        menu = Menu(fig, options = names(thisData.UPbData)[3:end], default = yvar)
+
+        fig[1,1][2,1]=vgrid!(
+            Label(fig,"Right axis:",width=nothing),
+            menu,tellheight=false
+        )
+        on(menu.selection) do s
+            changeAxisVar!(thisData.UPbData,ax2,y,s,thisData.teData)
+        end
+    end
     
 end
 
@@ -332,12 +356,15 @@ function initRangeSelect!(ax::Axis,fig::Figure,thisData::TransectData,spiderAx::
     #Implement a third axis on ax with everything hidden but axis labels on the top
     #Then add "S1, S2, S3..." to the axis label as was done with elements on REE plot
     sRange = select_rectangle(ax.scene)
+    @show sRange
     on(sRange) do rect
+       
         x1 = rect.origin[1]
         x2 = rect.widths[1] + x1
         xmid = mean([x1,x2])
 
         push!(selectionsMid,xmid)
+        
         # push!(selectionsStart,x1)
         # push!(selectionsStop,x2)
         push!(selStarts[],x1)
@@ -355,7 +382,7 @@ function initRangeSelect!(ax::Axis,fig::Figure,thisData::TransectData,spiderAx::
         ax3.xticks = (selectionsMid,["S"*string(i) for i = 1:sIndex])
         # text!()
         elemAvg, teRow = averageLineTE(thisData,start = x1,stop=x2)
-       
+     
         push!(thisData.teAvgs,["S"*string(sIndex);teRow])
         elemRatio = plotSpider!(elemAvg,norm,spiderAx,spiderFig,sIndex)
         push!(thisData.teNorm,["S"*string(sIndex);x1;x2;elemRatio])
@@ -363,7 +390,7 @@ function initRangeSelect!(ax::Axis,fig::Figure,thisData::TransectData,spiderAx::
            
             sel = "S"*string(sIndex)
             selAnal, selRaw = averageUPb(thisData,start=x1,stop=x2)
-
+           
             plotUPb!(isoplotFig,isoplotAx,selAnal,sIndex)
             push!(thisData.UPbAvgs,[sel;x1;x2;selAnal;selRaw])
             xmin, xmax, ymin, ymax = datalimits(thisData.UPbAvgs[!,:Analyses])
@@ -569,7 +596,54 @@ function midpoint(p1::Point2f, p2::Point2f)
     y1, y2 = p2[2] > p1[2] ? (p1[2],p2[2]) : (p2[2],p1[2])
 
     return Point2f((x2-x1)/2+x1,(y2-y1)/2+y1)
+
 end
+
+function r_squared(y,y_model)
+    return 1 - sum((y .- y_model).^2)/sum((y.-mean(y)).^2)
+end
+
+function rescale_UTh!(teData, upbData)
+    #First adjust x slightly so that they match between UPb and TEs
+    #Then perform linear regression using U_approx as independent and TEs as dependent
+    #Scaling factor will be the equation of the line
+    xTE = teData[!,:Distance]
+    xUPb = upbData[!,:DistanceMod]
+    U_TE_match = Array{Float64}([])
+    Th_TE_match = Array{Float64}([])
+    weights = Array{Float64}([])
+    for i in 1:lastindex(xUPb)
+        
+        xdiff = abs(xUPb[i]-xTE[1])
+        j = 2
+        xdiffnext = abs(xUPb[i]-xTE[j])
+        while xdiffnext < xdiff && j < lastindex(xTE)
+            xdiff = xdiffnext
+            j += 1
+            xdiffnext = abs(xUPb[i]-xTE[j])
+        end
+
+        U_TE_match = push!(U_TE_match,teData[j,Regex("U\\d+")][1])
+        Th_TE_match = push!(Th_TE_match,teData[j,Regex("Th\\d+")][1])
+
+        if teData[j,Regex("U\\d+")][1] == 0
+            push!(weights, 50.0)
+        else
+            push!(weights, 1.0)
+        end
+    end
+
+    regression = linregress(upbData[!,:Approx_U_PPM],U_TE_match,weights)
+    slope = LinearRegression.slope(regression)
+    y_intercept = LinearRegression.bias(regression)
+    
+    upbData[!,:U_rescaled] = upbData[!,:Approx_U_PPM].*slope .+ y_intercept
+    println("R^2 U = " *string(r_squared(U_TE_match,upbData[!,:U_rescaled])))
+    upbData[!,:Th_rescaled] = upbData[!,:U_rescaled]./upbData[!,"Final U/Th"]
+    println("R^2 Th = " *string(r_squared(Th_TE_match,upbData[!,:Th_rescaled])))
+
+end
+
 GLMakie.activate!()
 set_theme!(myTheme)
 # zrn37 = DataFrame(CSV.File(raw"C:\Users\Sabas\OneDrive - University of Waterloo\Documents\Waterloo\LAICPMS\2023_06_22\20SD06-2_Zrn37.csv"))

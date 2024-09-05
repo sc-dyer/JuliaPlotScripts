@@ -25,4 +25,4 @@ GLMakie.activate!()
 set_theme!(myTheme)
 
 mydf = import_brc("BRC.csv")
-plot_isocon(mydf,Symbol("23SD20H"),Symbol("23SD20F"))
+plot_isocon(mydf,Symbol("23SD20A"),Symbol("23SD20C"))

@@ -1,8 +1,10 @@
-using CairoMakie
+# using CairoMakie
+using GLMakie
 using Isoplot
 using DataFrames
 using CSV
 using Statistics
+using LinearRegression
 using FileIO
 using NativeFileDialog
 using JLD2
@@ -216,6 +218,51 @@ function plotUPb!(ax::Axis,analysis::UPbAnalysis,selectionIndex::Integer)
     text!(ax,analysis.μ[1],analysis.μ[2],text="S"*string(selectionIndex),fontsize = 15)
 end
 
+function r_squared(y,y_model)
+    return 1 - sum((y .- y_model).^2)/sum((y.-mean(y)).^2)
+end
+
+function rescale_UTh!(teData, upbData)
+    #First adjust x slightly so that they match between UPb and TEs
+    #Then perform linear regression using U_approx as independent and TEs as dependent
+    #Scaling factor will be the equation of the line
+    xTE = teData[!,:Distance]
+    xUPb = upbData[!,:DistanceMod]
+    U_TE_match = Array{Float64}([])
+    Th_TE_match = Array{Float64}([])
+    weights = Array{Float64}([])
+    for i in 1:lastindex(xUPb)
+        
+        xdiff = abs(xUPb[i]-xTE[1])
+        j = 2
+        xdiffnext = abs(xUPb[i]-xTE[j])
+        while xdiffnext < xdiff && j < lastindex(xTE)
+            xdiff = xdiffnext
+            j += 1
+            xdiffnext = abs(xUPb[i]-xTE[j])
+        end
+
+        U_TE_match = push!(U_TE_match,teData[j,Regex("U\\d+")][1])
+        Th_TE_match = push!(Th_TE_match,teData[j,Regex("Th\\d+")][1])
+
+        if teData[j,Regex("U\\d+")][1] == 0
+            push!(weights, 50.0)
+        else
+            push!(weights, 1.0)
+        end
+    end
+
+    @show length(U_TE_match)
+    regression = linregress(upbData[!,:Approx_U_PPM],U_TE_match,weights)
+    slope = LinearRegression.slope(regression)
+    y_intercept = LinearRegression.bias(regression)
+    
+    upbData[!,:U_rescaled] = upbData[!,:Approx_U_PPM].*slope .+ y_intercept
+    println("R^2 U = " *string(r_squared(U_TE_match,upbData[!,:U_rescaled])))
+    upbData[!,:Th_rescaled] = upbData[!,:U_rescaled]./upbData[!,"Final U/Th"]
+    println("R^2 Th = " *string(r_squared(Th_TE_match,upbData[!,:Th_rescaled])))
+
+end
 # println("Pick TE dataset")
 # newTE = pick_file(;filterlist="csv")
 # println("Pick UPb dataset")
@@ -226,7 +273,7 @@ end
 # savedir =  pick_folder()
 # normFile = "Chondrite.csv"
 
-# set_theme!(myTheme)
+set_theme!(myTheme)
 # teDF = DataFrame(CSV.File(newTE))
 # upbDF = DataFrame(CSV.File(newUPb))
 # selDF = DataFrame(CSV.File(oldExports))
@@ -244,7 +291,7 @@ newTEs = []
 newUPbs = []
 oldExports = []
 savedirs = []
-normFile = "Chondrite.csv"
+normFile = "chondrite.csv"
 offsets = []
 stretches = []
 normDF = DataFrame(CSV.File(normFile))
@@ -461,82 +508,103 @@ normDF = DataFrame(CSV.File(normFile))
 # push!(offsets,-6.6)
 # push!(stretches,-1.0)
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn4/21SD68_Zrn4_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn4/21SD68_Zrn4_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn4/Exports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn4/Exports_91500-com")
-push!(offsets,6.6)
-push!(stretches,0.0)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn4/21SD68_Zrn4_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn4/21SD68_Zrn4_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn4/Exports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn4/Exports_91500-com")
+# push!(offsets,6.6)
+# push!(stretches,0.0)
 
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn6/21SD68_Zrn6_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn6/21SD68_Zrn6_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn6/Exports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn6/Exports_91500-com")
-push!(offsets,-12.0)
-push!(stretches,-0.7)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn6/21SD68_Zrn6_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn6/21SD68_Zrn6_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn6/Exports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn6/Exports_91500-com")
+# push!(offsets,-12.0)
+# push!(stretches,-0.7)
 
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7a_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7a_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn7/7aExports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn7/7aExports_91500-com")
-push!(offsets,-10.6)
-push!(stretches,-3.5)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7a_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7a_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn7/7aExports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn7/7aExports_91500-com")
+# push!(offsets,-10.6)
+# push!(stretches,-3.5)
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7b_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7b_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn7/7bExports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn7/7bExports_91500-com")
-push!(offsets,-4.0)
-push!(stretches,-2.0)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7b_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7b_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn7/7bExports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn7/7bExports_91500-com")
+# push!(offsets,-4.0)
+# push!(stretches,-2.0)
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7a_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn9/21SD68_Zrn9_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn9/Exports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn9/Exports_91500-com")
-push!(offsets,-2.2)
-push!(stretches,0.0)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn7/21SD68_Zrn7a_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn9/21SD68_Zrn9_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn9/Exports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn9/Exports_91500-com")
+# push!(offsets,-2.2)
+# push!(stretches,0.0)
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn17/21SD68_Zrn17_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn17/21SD68_Zrn17_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn17/Exports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn17/Exports_91500-com")
-push!(offsets,-2.2)
-push!(stretches,0.0)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn17/21SD68_Zrn17_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn17/21SD68_Zrn17_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn17/Exports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn17/Exports_91500-com")
+# push!(offsets,-2.2)
+# push!(stretches,0.0)
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn22/21SD68_Zrn22_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn22/21SD68_Zrn22_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn22/Exports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn22/Exports_91500-com")
-push!(offsets,1.5)
-push!(stretches,0.0)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn22/21SD68_Zrn22_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn22/21SD68_Zrn22_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn22/Exports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn22/Exports_91500-com")
+# push!(offsets,1.5)
+# push!(stretches,0.0)
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn23/21SD68_Zrn23_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn23/21SD68_Zrn23_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn23/Exports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn23/Exports_91500-com")
-push!(offsets,-16.2)
-push!(stretches,-1.5)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn23/21SD68_Zrn23_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn23/21SD68_Zrn23_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn23/Exports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn23/Exports_91500-com")
+# push!(offsets,-16.2)
+# push!(stretches,-1.5)
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn27/21SD68_Zrn27a_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn27/21SD68_Zrn27a_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn27/27aExports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn27/27aExports_91500-com")
-push!(offsets,-8.6)
-push!(stretches,-2.6)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn27/21SD68_Zrn27a_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn27/21SD68_Zrn27a_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn27/27aExports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn27/27aExports_91500-com")
+# push!(offsets,-8.6)
+# push!(stretches,-2.6)
 
-push!(newTEs, "ZrnLaserPlots/21SD68/Zrn27/21SD68_Zrn27b_TE.csv")
-push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn27/21SD68_Zrn27b_UPb_91500-com.csv")
-push!(oldExports,"ZrnLaserPlots/21SD68/Zrn27/27bExports/UPbAvgs.csv")
-push!(savedirs,"ZrnLaserPlots/21SD68/Zrn27/27bExports_91500-com")
-push!(offsets,-12.8)
-push!(stretches,0.0)
+# push!(newTEs, "ZrnLaserPlots/21SD68/Zrn27/21SD68_Zrn27b_TE.csv")
+# push!(newUPbs, "ZrnLaserPlots/21SD68/Zrn27/21SD68_Zrn27b_UPb_91500-com.csv")
+# push!(oldExports,"ZrnLaserPlots/21SD68/Zrn27/27bExports/UPbAvgs.csv")
+# push!(savedirs,"ZrnLaserPlots/21SD68/Zrn27/27bExports_91500-com")
+# push!(offsets,-12.8)
+# push!(stretches,0.0)
 
-for i in 1:lastindex(newTEs)
-    teDF = DataFrame(CSV.File(newTEs[i]))
-    upbDF = DataFrame(CSV.File(newUPbs[i]))
-    selDF = DataFrame(CSV.File(oldExports[i]))
+# for i in 1:lastindex(newTEs)
+#     teDF = DataFrame(CSV.File(newTEs[i]))
+#     upbDF = DataFrame(CSV.File(newUPbs[i]))
+#     selDF = DataFrame(CSV.File(oldExports[i]))
     
-    replot(teDF,upbDF,selDF,normDF,"chondrite",2,800, 1600,savedirs[i];xtranslate = offsets[i], xstretch = stretches[i])
-end
+#     replot(teDF,upbDF,selDF,normDF,"chondrite",2,800, 1600,savedirs[i];xtranslate = offsets[i], xstretch = stretches[i])
+# end
+tefile = "ZrnLaserPlots/20SD06/Zrn41/Exports_91500-com/TraceElementData.csv"
+upbfile = "ZrnLaserPlots/20SD06/Zrn41/Exports_91500-com/UPbData.csv"
+teDF = DataFrame(CSV.File(tefile))
+upbDF= DataFrame(CSV.File(upbfile))
+
+rescale_UTh!(teDF, upbDF)
+
+GLMakie.activate!()
+fig = Figure(size = FIG_SIZE)
+
+ax = Axis(fig[1,1])
+
+lines!(ax,teDF[!,:Distance],teDF[!,"U238_ppm"])
+lines!(ax,upbDF[!,:DistanceMod],upbDF[!,:U_rescaled])
+display(GLMakie.Screen(),fig)
+
+fig2 = Figure(size = FIG_SIZE)
+ax2 = Axis(fig2[1,1])
+lines!(ax2,teDF[!,:Distance],teDF[!,"Th232_ppm"])
+lines!(ax2,upbDF[!,:DistanceMod],upbDF[!,:Th_rescaled])
+display(GLMakie.Screen(),fig2)
