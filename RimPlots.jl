@@ -2,11 +2,16 @@ using GLMakie
 using DataFrames
 using CSV
 
+mutable struct RimData
+    name::String
+    tes::Array{DataFrame}
+    uth::Array{DataFrame}
+end
 function importfiles(filedir)
-    te_df = DataFrame(CSV.file(filedir*"TraceElementData.csv"))
-    uth_df = DataFrame(CSV.file(filedir*"UPbData.csv"))
+    te_df = DataFrame(CSV.File(joinpath(filedir,"TraceElementData.csv")))
+    uth_df = DataFrame(CSV.File(joinpath(filedir,"UPbData.csv")))
     uth_df[!,:Distance] = uth_df[!,:DistanceMod]
-    selections = DataFrame(CSV.file(filedir*"TraceElementsAvgs.csv"))
+    selections = DataFrame(CSV.File(joinpath(filedir,"TraceElementsAvgs.csv")))
     rim_te = DataFrame[]
     rim_uth = DataFrame[]
     for row in eachrow(selections)
@@ -18,7 +23,7 @@ function importfiles(filedir)
 end
 
 function select_range(df,x1,x2)
-    
+    rimdf = df
     if x1 < x2
         rimdf = filter(:Distance => x -> x1 <= x <= x2, df)
     
@@ -47,9 +52,44 @@ function arbitrary_scale!(df;x1 = 0.0, x2 = 100.0)
 end
 
 function import_all(directory)
+    entries = readdir(directory)
+
+    zrns = RimData[]
+
+    for entry in entries
+        if isdir(joinpath(directory,entry))
+            name = entry
+            tes, uth = importfiles(joinpath(directory,entry))
+            push!(zrns,RimData(name,tes,uth))
+        end
+    end
+    
+    return zrns
+end
+
+function plot_rims(rims)
+
 
 end
 
-function plot_rims()
+function changeElem!(df, y, elem)
+
+    if elem == "U" || elem == "Th"
+        y[] = df[!,Symbol(elem*"_rescaled")]
+    else
+        y[] = df[!,Regex(elem*"\\d+")][!,1]
+    end
+
+    return maximum(y)
 
 end
+
+function changeElem!(rims,ys, elem, ax)
+
+    for rim in rims
+
+    end
+end
+
+zrns = import_all("ZrnLaserPlots/20SD06/TransectScaling/")
+
