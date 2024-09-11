@@ -1,5 +1,5 @@
-#myColours = ["#FF8CA6","#6D8FFF","#F9C52A","#A9EFA5", "#E6A7FB","#000000","#FF0000","#008000","#0000FF","#4B0082","#FF8C00"]
-myColours = ["#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7"]
+#myColours = ["#FF8CA6","#6D8FFF","#F9C52A","#A9EFA5", "#E6A7FB","#000000","","#008000","#0000FF","#4B0082","#FF8C00"]
+myColours = ["#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","#000000"]
 myTheme = Theme(
     fonts = (; regular = "B612", bold = "B612-Bold"),
     fontsize = 20,
