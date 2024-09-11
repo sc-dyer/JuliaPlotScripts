@@ -123,20 +123,20 @@ fig,ax = initSpiderFig("chondrite",norm)
 # plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
 # sampleIndex = 15
 # plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
-# for i in 19:23
-#     sampleIndex = i
-#     plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
-# end
+for i in 21:23
+    sampleIndex = i
+    plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
+end
 
 # for i in 24:24#lastindex(samples)-1
 #     sampleIndex = i
 #     plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
 # end
 
-for i in 9:11
-    sampleIndex = i
-    plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
-end
+# for i in 9:11
+#     sampleIndex = i
+#     plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
+# end
 
 
 
