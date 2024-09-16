@@ -171,7 +171,7 @@ function initFig!(lineData::DataFrame, scanSpeed::Int,elem::String)
             GLMakie.save(dir*"/Isoplot.png",isoFig)
             GLMakie.save(dir*"/ZrnImage.png",imgFig)
         end
-        rescaleUPb
+        
     end
     return fig,ax, x, y
 end
