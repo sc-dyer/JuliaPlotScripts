@@ -249,5 +249,5 @@ end
 
 GLMakie.activate!()
 set_theme!(myTheme)
-zrns = init_fig("ZrnLaserPlots/20SD06/TransectScaling/")
-
+# zrns = init_fig("ZrnLaserPlots/20SD06/TransectScaling/")
+zrns = init_fig("ZrnLaserPlots/20SD17A/TransectScaling/",is_scaled=true)
