@@ -2,10 +2,12 @@
 #using AlgebraOfGraphics
 using DataFrames
 using CSV
-using GLMakie
+# using GLMakie
+using CairoMakie
 using Clustering
 using Distances
 using NearestNeighbors
+colourchoice = 2
 # myColours = ["#FF8CA6","#6D8FFF","#F9C52A","#A9EFA5", "#E6A7FB","#000000","#FF0000","#008000","#0000FF","#4B0082","#FF8C00"]
 include("PlotDefaults.jl")
 
@@ -63,30 +65,30 @@ function rangesearch(df,threshold_distance)
     return counts
 end
 
-GLMakie.activate!()
+# GLMakie.activate!()
 set_theme!(myTheme)
 
 zrnData =  DataFrame(CSV.File(raw"/home/scdyer/Documents/Waterloo/SEM/Zircon CL/ZrnMeasurements/20SD06.csv"))
 # zrnData = dropmissing(zrnData)
 
 fig = Figure()
-ax = Axis(fig[1,1])
+ax = Axis(fig[1,1],aspect=DataAspect())
 # hist!(zrnData[!,"a (μm)"], strokewidth = 1, strokecolor = :black, bins = 20)
 
-zrnData[!,:nndist] = nn_distance(zrnData)
-zrnData[!,:nncounts] = rangesearch(zrnData,4.0)
-zrnData = dropmissing(zrnData)
-# scatter!(ax,nndist, zrnData[!,"a-a0"])
-# boxplot!(ax,zrnData[!,:nncounts],zrnData[!,"a-a0"])
-clusterXY!(zrnData,6)
-# plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas1",clustIndex = 0)
-# plotValues(zrnData, "Co   re Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas2",clustIndex = 2)
-# plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas3",clustIndex = 3)
-# plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas4",clustIndex = 4)
-# plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas5",clustIndex = 5)
-# plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas6",clustIndex = 6)
+# zrnData[!,:nndist] = nn_distance(zrnData)
+# zrnData[!,:nncounts] = rangesearch(zrnData,4.0)
+# zrnData = dropmissing(zrnData)
+# # scatter!(ax,nndist, zrnData[!,"a-a0"])
+# # boxplot!(ax,zrnData[!,:nncounts],zrnData[!,"a-a0"])
+# clusterXY!(zrnData,6)
+# # plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas1",clustIndex = 0)
+# # plotValues(zrnData, "Co   re Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas2",clustIndex = 2)
+# # plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas3",clustIndex = 3)
+# # plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas4",clustIndex = 4)
+# # plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas5",clustIndex = 5)
+# # plotValues(zrnData, "Core Area (μm^2)", "Rim Area (μm^2)",ax,fig,"20SD06_Areas6",clustIndex = 6)
 
-plotValues(zrnData, "a0 (μm)", "a-a0",ax,fig,"20SD06_a1",clustIndex = 4)
+# plotValues(zrnData, "a0 (μm)", "a-a0",ax,fig,"20SD06_a1",clustIndex = 4)
 # plotValues(zrnData, "a0 (μm)", "a-a0",ax,fig,"20SD06_a2",clustIndex = 2)
 # plotValues(zrnData, "a0 (μm)", "a-a0",ax,fig,"20SD06_a3",clustIndex = 3)
 # plotValues(zrnData, "a0 (μm)", "a-a0",ax,fig,"20SD06_a4",clustIndex = 4)
@@ -96,4 +98,10 @@ plotValues(zrnData, "a0 (μm)", "a-a0",ax,fig,"20SD06_a1",clustIndex = 4)
 # # plotValues(zrnData, "a0 (μm)", "a-a0",ax,fig,"20SD06_Areas")
 # plotValues(zrnData, "X (mm)", "Y (mm)",ax,fig,"20SD06_XY")
 
-fig
+zrnData2 =  DataFrame(CSV.File(raw"/home/scdyer/Documents/Waterloo/SEM/Zircon CL/ZrnMeasurements/20SD06_reduced.csv"))
+scatter!(zrnData[!,"X (mm)"],zrnData[!,"Y (mm)"],color = myColours[2])
+scatter!(zrnData2[!,"X (mm)"],zrnData2[!,"Y (mm)"],color = myColours[3])
+text!(zrnData2[!,"X (mm)"],zrnData2[!,"Y (mm)"].+0.2,text=zrnData2[!,:Zircon],align = (:center,:bottom))
+ax.xlabel = "X (mm)"
+ax.ylabel = "Y (mm)"
+save("ZrnPlots/20SD06_XY_special.svg",fig)

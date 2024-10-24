@@ -1,9 +1,14 @@
 #myColours = ["#FF8CA6","#6D8FFF","#F9C52A","#A9EFA5", "#E6A7FB","#000000","","#008000","#0000FF","#4B0082","#FF8C00"]
-myColours = ["#000000","#E69F00","#56B4E9","#009E73","#0072B2","#D55E00","#CC79A7"]#"#F0E442"
+
+myColours = ["#000000","#E69F00","#56B4E9","#009E73","#0072B2","#D55E00","#CC79A7"]
+colourscheme = myColours
+myColours2 = ["#E69F00","#56B4E9","#009E73","#0072B2","#D55E00","#CC79A7","#000000"]#"#F0E442"
+schemes = [myColours,myColours2]
+colourscheme = schemes[colourchoice]
 myTheme = Theme(
     fonts = (; regular = "B612", bold = "B612-Bold"),
     fontsize = 20,
-    palette = (;color =myColours,marker = [:circle,:rect,:diamond,:cross, :xcross,:utriangle,:star5,:star8, ],linestyle=[:solid,(:dot,:dense)]),
+    palette = (;color =colourscheme,marker = [:circle,:rect,:diamond,:cross, :xcross,:utriangle,:star5,:star8, ],linestyle=[:solid,(:dot,:dense)]),
     Poly = (;cycle = [:color]),
     Scatter = (;cycle = [:color,:marker],markersize = 15),
     BoxPlot = (;cycle = [:color]),

@@ -8,5 +8,6 @@
 *.csv
 *.svg
 /*/
+!/JPerplexPlots
 *.txt
 gmt.history

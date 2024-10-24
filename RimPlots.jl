@@ -7,7 +7,7 @@ using Loess
 
 const FIG_SIZE = (1200,900)
 const SPECIAL_SCALE = 40
-
+colourchoice = 2
 include("PlotDefaults.jl")
 
 mutable struct RimData
@@ -133,7 +133,7 @@ function import_all(directory, is_scaled; special = nothing)
             end
 
             for i in 1:lastindex(uth)
-                rimName = name*"_R"*string(i)
+                rimName = name*"-R"*string(i)
                 y = uth[i][!,:U_rescaled]
 
                 x = uth[i][!,:Distance]
@@ -299,10 +299,10 @@ function average_interval(rim, interval)
     return x_mids, yavgs, ystds
 end
 
-function plot_average_interval(rims,interval,elem; is_scaled = true, limits = true)
-    fig = Figure(size = FIG_SIZE)
-    ax  = Axis(fig[1,1])
-    lines!(ax, [0,0], [-1000,1000],linestyle = :dash, color = :black, linewidth=3)
+function plot_average_interval!(ax,rims,interval,elem; is_scaled = true, limits = true)
+    
+    
+    lines!(ax, [0,0], [-1000,1000],linestyle = :dash, color = :black, linewidth=2)
 
     ax.xlabel = "x (μm)"
     if is_scaled
@@ -314,7 +314,7 @@ function plot_average_interval(rims,interval,elem; is_scaled = true, limits = tr
     for rim in rims
         x, y, y_err = average_interval(rim,interval)
         # @show x, y, y_err
-        scatterlines!(ax,x,y,linewidth=3, label = rim.name)
+        scatterlines!(ax,x,y,linewidth=2, label = rim.name)
         errorbars!(ax, x,y, y_err, whiskerwidth = 6)
     end
 
@@ -341,9 +341,7 @@ function plot_average_interval(rims,interval,elem; is_scaled = true, limits = tr
         ylims!(ax,0,maxy)
         xlims!(ax,minx,maxx)
     end
-    fig[1,2] = Legend(fig,ax)
-
-    return fig
+    
 end
 
 function init_fig(directory;is_scaled = true, special = nothing)
@@ -439,8 +437,11 @@ function init_fig(directory;is_scaled = true, special = nothing)
     avgbutton = Button(fig[1,1][3,1],label = "Average Intervals")
     
     on(avgbutton.clicks) do clicks
-       avgfig = plot_average_interval(zrns,10,elem_selection, is_scaled=is_scaled)
-       display(GLMakie.Screen(),avgfig)
+        fig2 = Figure(size = FIG_SIZE)
+        ax2 = plot_average_interval(zrns,10,elem_selection, is_scaled=is_scaled)
+        fig2[1,1] = ax2
+        fig2[1,2] = Legend(fig2,ax2)
+        display(GLMakie.Screen(),fig2)
     end
 
     fig[1,3] = Legend(fig,ax)
@@ -451,11 +452,14 @@ function save_fig(directory;is_scaled = true, special = nothing, elem = "U",scal
 
 
     zrns = import_all(directory, is_scaled,special=special)
-    
+    fig = Figure(size = FIG_SIZE)
     if averagelines
-        fig = plot_average_interval(zrns,10,elem,is_scaled = is_scaled, limits = false)
+        ax = plot_average_interval(zrns,10,elem,is_scaled = is_scaled, limits = false)
+        fig[1,1] = ax
+        fig[1,2] = Legend(fig,ax)
+        
     else
-        fig = Figure(size = FIG_SIZE)
+        
 
         ax = Axis(fig[1,1])
         lines!(ax, [0,0], [-1000,1000],linestyle = :dash, color = :black, linewidth=3)
@@ -473,7 +477,8 @@ function save_fig(directory;is_scaled = true, special = nothing, elem = "U",scal
         else
             ax.ylabel = elem*" (μg/g)"
         end
-
+        changeElem!(zrns,elem,ax,is_scaled)
+        
         for zrn in zrns
             
             lines!(ax,zrn.x,zrn.y,linewidth=3, label = zrn.name)
@@ -497,26 +502,26 @@ function save_fig(directory;is_scaled = true, special = nothing, elem = "U",scal
         # ax.xticks = 0:xInterval:xMax
         # xlims!(ax,0,xmax)
     
-        # maxy = 0
-        # minx = Inf
-        # maxx = -Inf
-        # for rim in zrns
+        maxy = 0
+        minx = Inf
+        maxx = -Inf
+        for rim in zrns
 
-        #     if maximum(rim.y[])> maxy
-        #         maxy = maximum(rim.y[])
-        #     end
+            if maximum(rim.y[])> maxy
+                maxy = maximum(rim.y[])
+            end
 
-        #     if minimum(rim.x[]) < minx
-        #         minx = minimum(rim.x[])
-        #     end
+            if minimum(rim.x[]) < minx
+                minx = minimum(rim.x[])
+            end
 
-        #     if maximum(rim.x[]) > maxx
-        #         maxx = maximum(rim.x[])
-        #     end
+            if maximum(rim.x[]) > maxx
+                maxx = maximum(rim.x[])
+            end
 
-        # end
+        end
 
-        # ylims!(ax,0,maxy)
+        ylims!(ax,0,maxy)
         # xlims!(ax,minx,maxx)
     
 
@@ -529,19 +534,132 @@ function save_fig(directory;is_scaled = true, special = nothing, elem = "U",scal
     return fig
 end
 
+function make_ax!(ax,directory;is_scaled = true, special = nothing, elem = "U",scaling = nothing, averagelines = false)
+
+
+    zrns = import_all(directory, is_scaled,special=special)
+    
+    if averagelines
+        plot_average_interval!(ax, zrns,10,elem,is_scaled = is_scaled, limits = false)
+    else
+        
+
+        
+        lines!(ax, [0,0], [-1000,1000],linestyle = :dash, color = :black, linewidth=2)
+        
+
+        
+    
+        ax.xlabel = "x (μm)"
+        if is_scaled
+            ax.xlabel = "x (arbitrary scale)"
+        end
+
+        if elem == "Th/U"
+            ax.ylabel = elem
+        else
+            ax.ylabel = elem*" (μg/g)"
+        end
+        changeElem!(zrns,elem,ax,is_scaled)
+        
+        for zrn in zrns
+            lines!(ax,zrn.x,zrn.y,linewidth=2, label = zrn.name)
+        end
+
+        
+        # xMax = round(xmax,sigdigits=2)
+        # xInterval = 40
+        # if xmax <240
+        #     xInterval = 20
+        #     if xMax <120
+        #         xInterval = 10
+        #         if xMax <= 60
+        #             xInterval = 5
+        #             if xMax <= 25
+        #                 xInterval = 2
+        #             end
+        #         end
+        #     end    
+        # end
+        # ax.xticks = 0:xInterval:xMax
+        # xlims!(ax,0,xmax)
+    
+        maxy = 0
+        minx = Inf
+        maxx = -Inf
+        for rim in zrns
+
+            if maximum(rim.y[])> maxy
+                maxy = maximum(rim.y[])
+            end
+
+            if minimum(rim.x[]) < minx
+                minx = minimum(rim.x[])
+            end
+
+            if maximum(rim.x[]) > maxx
+                maxx = maximum(rim.x[])
+            end
+
+        end
+
+        ylims!(ax,0,maxy)
+        # xlims!(ax,minx,maxx)
+       
+
+        if !isnothing(scaling)
+            ylims!(ax,scaling[1],scaling[2])
+        end
+        
+    end
+    ax.xticklabelsvisible = false
+    # axislegend(ax,framevisible = false)
+    
+end
 
 # GLMakie.activate!()
 set_theme!(myTheme)
 # zrns = init_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26")
 # zrns = init_fig("ZrnLaserPlots/20SD17A/TransectScaling/",is_scaled=true)
-f = save_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "U")
-save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","URimPlots.svg"),f)
+# f = save_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "U")
+# save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","URimPlots.svg"),f)
 
-f = save_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Th",scaling = (-10,50))
-save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","ThRimPlots.svg"),f)
+# f = save_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Th",scaling = (-10,50))
+# save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","ThRimPlots.svg"),f)
 
-f = save_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Y",averagelines = true)
-save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","YRimPlots.svg"),f)
+# f = save_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Y",averagelines = true)
+# save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","YRimPlots.svg"),f)
 
-f = save_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Yb",averagelines = true)
-save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","YbRimPlots.svg"),f)
+# f = save_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Yb",averagelines = true)
+# save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","YbRimPlots.svg"),f)
+
+f = Figure()
+
+ax1 = Axis(f[1,1],aspect=1.5)
+make_ax!(ax1,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "U")
+ax1.xlabelvisible = false
+ax2 = Axis(f[1,2],aspect=1.5)
+make_ax!(ax2,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Th",scaling = (-5,50))
+ax2.xlabelvisible = false
+ax3 = Axis(f[2,1],aspect=1.5)
+make_ax!(ax3,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Y",averagelines = true)
+ax4 = Axis(f[2,2],aspect=1.5)
+make_ax!(ax4,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Yb",averagelines = true)
+
+# colsize!()
+rowsize!(f.layout,1,Fixed(300))
+rowsize!(f.layout,2,Fixed(300))
+colsize!(f.layout,1,Fixed(450))
+colsize!(f.layout,2,Fixed(450))
+
+f[1:2,3] = Legend(f,ax1)
+text!(ax1, 0.03,0.85,text="A",fontsize=36,space = :relative,offset = (4, 0))
+text!(ax2, 0.03,0.85,text="B",fontsize=36,space = :relative,offset = (4, 0))
+text!(ax3, 0.03,0.85,text="C",fontsize=36,space = :relative,offset = (4, 0))
+text!(ax4, 0.03,0.85,text="D",fontsize=36,space = :relative,offset = (4, 0))
+
+
+resize_to_layout!(f)
+
+
+save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","LasTEs.svg"),f)

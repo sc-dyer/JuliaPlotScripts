@@ -6,7 +6,7 @@ using Loess
 using NativeFileDialog
 
 const FIG_SIZE = (1200,900)
-const SPECIAL_SCALE = 40
+colorchoice = 2
 include("PlotDefaults.jl")
 
 mutable struct RimData

@@ -39,6 +39,7 @@ const FIG_SIZE = (1200,900)
 #         ygridvisible = false
 #         )
 # )
+colourchoice = 2
 include("PlotDefaults.jl")
 
 
