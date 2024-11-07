@@ -18,68 +18,101 @@ function feldspar_conditions(phase)
     end
 end
 
-sourcelib = init_meemum("23SD20A_melt-test1/MeltSource")
-source_compo = getcompo(sourcelib)
-close_meemum!(sourcelib)
+function plot_sourceh2o_range(dir,source_T, host_T)
 
-h2ostart = 1.0
-h2oend = 50.0
+    hostlib = init_meemum(joinpath(dir,"Host_CS"))
+    host_compo = hostlib.composition
+    close_meemum!(hostlib)
 
-source_compo1 = change_list_component(source_compo,h2ostart,"H2O")
-source_compo2 = change_list_component(source_compo,h2oend,"H2O")
 
-comporange = range(source_compo1,source_compo2,10)
-xh2o_range = molfrac.(comporange,"H2O")
-wh2o_range = massfrac.(comporange,"H2O").*100
+    sourcelib = init_meemum(joinpath(dir,"MeltSource"))
+    source_compo = getcompo(sourcelib)
+    
+    
+    h2ostart = 1.0
+    h2oend = 50.0
+    
+    source_compo1 = change_list_component(source_compo,h2ostart,"H2O")
+    source_compo2 = change_list_component(source_compo,h2oend,"H2O")
+    
+    comporange = range(source_compo1,source_compo2,10)
+    xh2o_range = molfrac.(comporange,"H2O")
+    wh2o_range = massfrac.(comporange,"H2O").*100
+    
+    systems = equilibrate_closed_system.(fill(sourcelib,10),comporange,fill(host_compo,10),source_T,10000,host_T,9000,2.0)
+    sources = [sys[1] for sys in systems]
+    melts = [sys[2] for sys in systems] 
+    hosts = [sys[3] for sys in systems]
 
-sources, melts, hosts = equilibrate_open_system("23SD20A_melt-test1/MeltSource","23SD20A_melt-test1/Host",875,10000,800,9000,source_compo1,source_compo2, steps =10, phasefunc = [feldspar_conditions])
+    fig = Figure(size = (600,450))
+    ax = Axis(fig[1,1])
+    phasemode!(ax,wh2o_range,hosts)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(dir,"Host_CS_2.svg"),fig)
+    
+    fig = Figure(size = (600,450))
+    ax = Axis(fig[1,1])
+    phasemode!(ax,wh2o_range,melts)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(dir,"Melt_CS_2.svg"),fig)
+    
+    fig = Figure(size = (600,450))
+    ax = Axis(fig[1,1])
+    phasemode!(ax,wh2o_range,sources)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(dir,"Source_CS_2.svg"),fig)
 
-fig = Figure(size = (600,450))
-ax = Axis(fig[1,1])
-phasemode!(ax,wh2o_range,hosts)
-fig[1,2] = Legend(fig,ax)
-save("23SD20A_melt-test1/Host.svg",fig)
 
-fig = Figure(size = (600,450))
-ax = Axis(fig[1,1])
-phasemode!(ax,wh2o_range,melts)
-fig[1,2] = Legend(fig,ax)
-save("23SD20A_melt-test1/Melt.svg",fig)
+    systems = equilibrate_closed_system.((sourcelib,),comporange,(host_compo,),source_T,10000,host_T,9000,10.0)
+    sources = [sys[1] for sys in systems]
+    melts = [sys[2] for sys in systems] 
+    hosts = [sys[3] for sys in systems]
 
-fig = Figure(size = (600,450))
-ax = Axis(fig[1,1])
-phasemode!(ax,wh2o_range,sources)
-fig[1,2] = Legend(fig,ax)
-save("23SD20A_melt-test1/Source.svg",fig)
+    fig = Figure(size = (600,450))
+    ax = Axis(fig[1,1])
+    phasemode!(ax,wh2o_range,hosts)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(dir,"Host_CS_10.svg"),fig)
+    
+    fig = Figure(size = (600,450))
+    ax = Axis(fig[1,1])
+    phasemode!(ax,wh2o_range,melts)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(dir,"Melt_CS_10.svg"),fig)
+    
+    fig = Figure(size = (600,450))
+    ax = Axis(fig[1,1])
+    phasemode!(ax,wh2o_range,sources)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(dir,"Source_CS_10.svg"),fig)
 
-# sourcelib = init_meemum("23SD20A_melt-test2/MeltSource")
-# source_compo = getcompo(sourcelib)
-# close_meemum!(sourcelib)
+    close_meemum!(sourcelib)
 
-# h2ostart = 1.0
-# h2oend = 50.0
 
-# source_compo1 = change_list_component(source_compo,h2ostart,"H2O")
-# source_compo2 = change_list_component(source_compo,h2oend,"H2O")
-# comporange = range(source_compo1,source_compo2,10)
-# xh2o_range = molfrac.(comporange,"H2O")
-# wh2o_range = massfrac.(comporange,"H2O").*100
-# sources, melts, hosts = equilibrate_open_system("23SD20A_melt-test2/MeltSource","23SD20A_melt-test2/Host",900,10000,825,9000,source_compo1,source_compo2, steps =10, phasefunc = [feldspar_conditions])
+    sources, melts, hosts = equilibrate_open_system(joinpath(dir,"MeltSource"),joinpath(dir,"Host"),source_T,10000,host_T,9000,source_compo1,source_compo2, steps =10, phasefunc = [feldspar_conditions])
+    
+    fig = Figure(size = (600,450))
+    ax = Axis(fig[1,1])
+    phasemode!(ax,wh2o_range,hosts)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(dir,"Host_OS.svg"),fig)
+    
+    fig = Figure(size = (600,450))
+    ax = Axis(fig[1,1])
+    phasemode!(ax,wh2o_range,melts)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(dir,"Melt_OS.svg"),fig)
+    
+    fig = Figure(size = (600,450))
+    ax = Axis(fig[1,1])
+    phasemode!(ax,wh2o_range,sources)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(dir,"Source_OS.svg"),fig)
+end
 
-# fig = Figure(size = (600,450))
-# ax = Axis(fig[1,1])
-# phasemode!(ax,wh2o_range,hosts)
-# fig[1,2] = Legend(fig,ax)
-# save("23SD20A_melt-test2/Host.svg",fig)
-
-# fig = Figure(size = (600,450))
-# ax = Axis(fig[1,1])
-# phasemode!(ax,wh2o_range,melts)
-# fig[1,2] = Legend(fig,ax)
-# save("23SD20A_melt-test2/Melt.svg",fig)
-
-# fig = Figure(size = (600,450))
-# ax = Axis(fig[1,1])
-# phasemode!(ax,wh2o_range,sources)
-# fig[1,2] = Legend(fig,ax)
-# save("23SD20A_melt-test2/Source.svg",fig)
+plot_sourceh2o_range("23SD20A_source_23SD20A_host1/",875,800)
+plot_sourceh2o_range("23SD20A_source_23SD20A_host2/",900,825)
+plot_sourceh2o_range("Mesosome_source_23SD20A_host1/",875,800)
+plot_sourceh2o_range("Mesosome_source_23SD20A_host2/",900,825)
+plot_sourceh2o_range("Mesosome_source_Mesosome_host1/",875,800)
+plot_sourceh2o_range("Mesosome_source_Mesosome_host2/",900,825)

@@ -643,12 +643,16 @@ make_ax!(ax2,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = 
 ax2.xlabelvisible = false
 ax3 = Axis(f[2,1],aspect=1.5)
 make_ax!(ax3,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Y",averagelines = true)
+ax3.xlabelvisible = false
 ax4 = Axis(f[2,2],aspect=1.5)
 make_ax!(ax4,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Yb",averagelines = true)
+ax5 = Axis(f[3,1],aspect=1.5)
+make_ax!(ax5,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Th/U")
 
 # colsize!()
 rowsize!(f.layout,1,Fixed(300))
 rowsize!(f.layout,2,Fixed(300))
+rowsize!(f.layout,3,Fixed(300))
 colsize!(f.layout,1,Fixed(450))
 colsize!(f.layout,2,Fixed(450))
 
@@ -657,9 +661,9 @@ text!(ax1, 0.03,0.85,text="A",fontsize=36,space = :relative,offset = (4, 0))
 text!(ax2, 0.03,0.85,text="B",fontsize=36,space = :relative,offset = (4, 0))
 text!(ax3, 0.03,0.85,text="C",fontsize=36,space = :relative,offset = (4, 0))
 text!(ax4, 0.03,0.85,text="D",fontsize=36,space = :relative,offset = (4, 0))
-
+text!(ax5, 0.03,0.85,text="E",fontsize=36,space = :relative,offset = (4, 0))
 
 resize_to_layout!(f)
 
 
-save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","LasTEs.svg"),f)
+save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","LasTEsB.svg"),f)
