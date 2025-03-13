@@ -1,10 +1,10 @@
-using GLMakie
+using CairoMakie
 using DataFrames
 using CSV
 using Statistics
-using FileIO
-using Gtk
-
+# using FileIO
+# using Gtk
+colourchoice=2
 include("PlotDefaults.jl")
 DEFAULT_NORM = DataFrame(Element = ["Rb","Sr","Y","La","Ce","Pr","Nd","Sm","Eu","Gd","Tb","Dy","Ho","Er","Tm","Yb","Lu"],Concentration = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0])
 function filterSampleName(df::DataFrame,sampleName::String)
@@ -55,6 +55,44 @@ function initSpiderFig(normName::String,comparisonData::DataFrame)
     return fig,ax
 end
 
+function initSpiderFigs(normName::String,comparisonData::DataFrame,grid)
+    fig = Figure(size = (1000,1000))
+    elemList = Array{String}([])
+    for el in eachrow(comparisonData)
+        push!(elemList,el[:Element])
+    end
+    axs = []
+    for i in 1:grid[1]
+        axrow = []
+        for j in 1:grid[2]
+            ax = Axis(fig[i,j],
+                    yticksmirrored=true,
+                    yscale = log10,
+                    xminorticksize = 0,
+                    xminortickwidth = 0,
+                    aspect = 1.0)
+            ax.ylabel = "sample/"*normName
+            ax.xticks = (1:lastindex(elemList),elemList)
+            if length(axrow)==0
+                axrow = [ax]
+            else
+                axrow = [axrow ax]
+            end
+           
+        end
+        if length(axs) == 0
+            axs = axrow
+        else
+            axs = [axs; axrow]
+        end
+       
+    end
+    
+    
+
+    return fig,axs
+end
+
 #This will assume multiple records with a normal iolite dataframe layout in the sampleData
 function plotSpider!(sampleData::DataFrame,comparisonData::DataFrame,ax::Axis,fig::Figure,selectionIndex::Integer,selectionLabel::String)
 
@@ -67,19 +105,21 @@ function plotSpider!(sampleData::DataFrame,comparisonData::DataFrame,ax::Axis,fi
         
         for el in eachrow(comparisonData)
             push!(x,count)
-            push!(elemRatio,sample[Regex(el[:Element]*"\\d+.+mean")][1]/el[:Concentration])
+            try
+                push!(elemRatio,sample[Regex(el[:Element]*"\\d+.+mean")][1]/el[:Concentration])
+            catch
+                push!(elemRatio,sample[el[:Element]][1]/el[:Concentration])
+            end
             count += 1
         end
         # push!(elemError,em[:Error]/el[:Concentration])
-        lines!(ax,x,NaNIfNotPositive.(elemRatio),linewidth = 4, color = Cycled(selectionIndex), label = selectionLabel)
+        lines!(ax,x,NaNIfNotPositive.(elemRatio),linewidth = 1, color = Cycled(selectionIndex), label = selectionLabel)
            
     end
     
-    [delete!(leg) for leg in fig.content if leg isa Legend]
-    fig[1,2] = Legend(fig,ax,framevisible = false,merge = true)
-    if !isVisible(fig)
-        display(GLMakie.Screen(),fig)
-    end
+    # [delete!(leg) for leg in fig.content if leg isa Legend]
+    
+    
 end
 
 function calcEuAnomaly!(sampleData::DataFrame,normData::DataFrame)
@@ -105,28 +145,65 @@ function sumREEs!(sampleData::DataFrame)
                 sampleData[!,r"Ho\d+.+mean"][!,1] .+ sampleData[!,r"Er\d+.+mean"][!,1] .+ sampleData[!,r"Tm\d+.+mean"][!,1] .+
                 sampleData[!,r"Yb\d+.+mean"][!,1] .+ sampleData[!,r"Lu\d+.+mean"][!,1]
 end
-set_theme!(myTheme)
-samples = ["21SD08-2","21SD08-3","23SD02B-1","21SD09","21SD51D","21SD51F","21SD56A","22SD13C-2","22SD55B3","22SD55D","22SD55E","20SD06","21SD68","23SD03C-1","23SD03C-3","23SD03E",
-    "23SD03H-3","23SD03J-2","23SD20B","23SD20C","23SD20D","23SD20F","23SD20G","2M02061A","2M02061B","M30072-1A","M30072-1C","2M0506-16_2","2M0506-16_3B","M2707-16B_3B","M2707-5B"]
-samplesWGeochem = ["21SD08-2","21SD08-3","23SD02B-1","21SD51D","22SD13C-2","22SD55B3","22SD55D","22SD55E","20SD06","21SD68","23SD03C-1","23SD03C-3","23SD03E",
-    "23SD03H-3","23SD03J-2","23SD20B","23SD20C","23SD20D","23SD20F","23SD20G"]
-geochemSamples = ["21SD08","21SD08","23SD02B","21SD51D","22SD13C","22SD55B","22SD55D","22SD55E","20SD06","21SD68","23SD03C-1","23SD03C-5","23SD03E","23SD03H-Bulk",
-    "23SD03J-2","23SD20B","23SD20C","23SD20D","23SD20F","23SD20G"]
 
+function plotsamples(df, samplelists, norm, normname)
+    fig, axs = initSpiderFigs(normname,norm,[2,2])
+    for i in 1:lastindex(samplelists)
+        samples = samplelists[i]
+        row = Integer(trunc(i/2)+i%2)
+        col = (i+1)%2+1
+       
+        ax = axs[row,col]
+        for j in 1:lastindex(samples)
+            plotSpider!(filterSampleName(df,samples[j]),norm,ax,fig,j,samples[j])
+            
+        end
+        axislegend(ax,framevisible = false,merge = true,position = :rb)
+        limits!(ax,nothing,nothing,1,3000)
+    end
+
+    return fig
+end
+
+set_theme!(myTheme)
+# samples = ["21SD08-2","21SD08-3","23SD02B-1","21SD09","21SD51D","21SD51F","21SD56A","22SD13C-2","22SD55B3","22SD55D","22SD55E","20SD06","21SD68","23SD03C-1","23SD03C-3","23SD03E",
+#     "23SD03H-3","23SD03J-2","23SD20B","23SD20C","23SD20D","23SD20F","23SD20G","2M02061A","2M02061B","M30072-1A","M30072-1C","2M0506-16_2","2M0506-16_3B","M2707-16B_3B","M2707-5B"]
+# samplesWGeochem = ["21SD08-2","21SD08-3","23SD02B-1","21SD51D","22SD13C-2","22SD55B3","22SD55D","22SD55E","20SD06","21SD68","23SD03C-1","23SD03C-3","23SD03E",
+#     "23SD03H-3","23SD03J-2","23SD20B","23SD20C","23SD20D","23SD20F","23SD20G"]
+# geochemSamples = ["21SD08","21SD08","23SD02B","21SD51D","22SD13C","22SD55B","22SD55D","22SD55E","20SD06","21SD68","23SD03C-1","23SD03C-5","23SD03E","23SD03H-Bulk",
+#     "23SD03J-2","23SD20B","23SD20C","23SD20D","23SD20F","23SD20G"]
+
+# outcrop1 = ["21SD08-2","21SD08-3","23SD02B-1"]
+outcrop2 = ["23SD03C-1","23SD03C-3","23SD03E"]
+outcrop3 = ["22SD55B3","22SD55D","22SD55E"]
+outcrop4 = ["23SD20B","23SD20C","23SD20F","23SD20G"]
+migmatites = ["2M02061A","2M02061B","2M0506-16_2","2M0506-16_3B"]
 norm = DataFrame(CSV.File("chondrite.csv"))
-ampData = DataFrame(CSV.File("../../LAICPMS/AmphiboleData/Amphiboles.csv"))
-geochemData = DataFrame(CSV.File("../../Geochem/AmpSamples.csv"))
+ampData = DataFrame(CSV.File("../../LAICPMS/AmphiboleData_UpdatedSi/Amphiboles.csv"))
+geochemData = DataFrame(CSV.File("../../Geochem/FluidFlux_BRCb.csv"))
+
+# fig = plotsamples(ampData,[outcrop2,outcrop3,outcrop4,migmatites],norm,"chondrite")
+# save("SpiderPlots/AmphiboleTEs.svg",fig)
+
+outcrop1 = ["23SD02B-1","23SD02B-5","21SD08"]
+outcrop2 = ["23SD03C-1","23SD03C-5","23SD03E"]
+outcrop3 = ["22SD55B","22SD55D","22SD55E"]
+outcrop4 = ["23SD20B","23SD20C","23SD20D","23SD20F","23SD20G"]
+fig = plotsamples(geochemData,[outcrop1,outcrop2,outcrop3,outcrop4],norm,"chondrite")
+save("SpiderPlots/BRC_TEs.svg",fig)
 # calcEuAnomaly!(ampData,norm) 
-sumREEs!(ampData)
-fig,ax = initSpiderFig("chondrite",norm)
+# sumREEs!(ampData)
+
+
+
 # sampleIndex = 14
 # plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
 # sampleIndex = 15
 # plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
-for i in 21:23
-    sampleIndex = i
-    plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
-end
+# for i in 21:23
+#     sampleIndex = i
+#     plotSpider!(filterSampleName(ampData,samples[sampleIndex]),norm,ax,fig,sampleIndex,samples[sampleIndex])
+# end
 
 # for i in 24:24#lastindex(samples)-1
 #     sampleIndex = i

@@ -170,6 +170,26 @@ function changeElem!(rim, elem, is_scaled)
         else
             rim.x[] = rim.uth[!,:Distance]
         end
+
+    elseif contains(elem, "age")
+        rim.y[] = rim.uth[!,Symbol(elem)]
+        if is_scaled
+            rim.x[] = rim.uth[!,:x_arb]
+        else
+            rim.x[] = rim.uth[!,:Distance]
+        end
+    elseif contains(elem,"/")
+        y = copy(rim.tes[!,elem])
+        x = copy(rim.tes[!,:Distance])
+        if is_scaled
+            x = copy(rim.tes[!,:x_arb])
+        end
+        if length(x) < length(rim.x[])
+            x = [x;fill(x[end],length(rim.x[])-length(x))]
+            y = [y;fill(y[end],length(rim.y[])-length(y))]
+        end
+        rim.x[] = x
+        rim.y[] = y
     else
         y = copy(rim.tes[!,Regex(elem*"\\d+")][!,1])
         x = copy(rim.tes[!,:Distance])
@@ -189,7 +209,9 @@ function changeElem!(rim, elem, is_scaled)
 end
 
 function changeElem!(rims, elem, ax, is_scaled)
-    if elem == "Th/U"
+    if contains(elem, "age")
+        ax.ylabel = elem*" (Ma)"
+    elseif contains(elem,"/")
         ax.ylabel = elem
     else
         ax.ylabel = elem*" (μg/g)"
@@ -299,10 +321,10 @@ function average_interval(rim, interval)
     return x_mids, yavgs, ystds
 end
 
-function plot_average_interval!(ax,rims,interval,elem; is_scaled = true, limits = true)
+function plot_average_interval!(ax,rims,interval,elem; is_scaled = true, limits = true, scaling = nothing)
     
     
-    lines!(ax, [0,0], [-1000,1000],linestyle = :dash, color = :black, linewidth=2)
+    lines!(ax, [0,0], [-1000,10000],linestyle = :dash, color = :black, linewidth=2)
 
     ax.xlabel = "x (μm)"
     if is_scaled
@@ -314,8 +336,9 @@ function plot_average_interval!(ax,rims,interval,elem; is_scaled = true, limits 
     for rim in rims
         x, y, y_err = average_interval(rim,interval)
         # @show x, y, y_err
-        scatterlines!(ax,x,y,linewidth=2, label = rim.name)
         errorbars!(ax, x,y, y_err, whiskerwidth = 6)
+        scatterlines!(ax,x,y,linewidth=2, label = rim.name)
+        
     end
 
     maxy = 0
@@ -337,6 +360,10 @@ function plot_average_interval!(ax,rims,interval,elem; is_scaled = true, limits 
 
     end
 
+    if !isnothing(scaling)
+        ylims!(ax,scaling[1],scaling[2])
+    end
+
     if limits
         ylims!(ax,0,maxy)
         xlims!(ax,minx,maxx)
@@ -344,12 +371,13 @@ function plot_average_interval!(ax,rims,interval,elem; is_scaled = true, limits 
     
 end
 
+
 function init_fig(directory;is_scaled = true, special = nothing)
 
     fig = Figure(size = FIG_SIZE); display(GLMakie.Screen(),fig)
 
     ax = Axis(fig[1,2])
-    lines!(ax, [0,0], [-1000,1000],linestyle = :dash, color = :black, linewidth=3)
+    lines!(ax, [0,0], [-1000,10000],linestyle = :dash, color = :black, linewidth=3)
     zrns = import_all(directory, is_scaled,special=special)
 
 
@@ -438,7 +466,7 @@ function init_fig(directory;is_scaled = true, special = nothing)
     
     on(avgbutton.clicks) do clicks
         fig2 = Figure(size = FIG_SIZE)
-        ax2 = plot_average_interval(zrns,10,elem_selection, is_scaled=is_scaled)
+        ax2 = plot_average_interval!(zrns,10,elem_selection, is_scaled=is_scaled)
         fig2[1,1] = ax2
         fig2[1,2] = Legend(fig2,ax2)
         display(GLMakie.Screen(),fig2)
@@ -454,7 +482,7 @@ function save_fig(directory;is_scaled = true, special = nothing, elem = "U",scal
     zrns = import_all(directory, is_scaled,special=special)
     fig = Figure(size = FIG_SIZE)
     if averagelines
-        ax = plot_average_interval(zrns,10,elem,is_scaled = is_scaled, limits = false)
+        ax = plot_average_interval!(zrns,10,elem,is_scaled = is_scaled, limits = false, scaling = scaling)
         fig[1,1] = ax
         fig[1,2] = Legend(fig,ax)
         
@@ -462,7 +490,7 @@ function save_fig(directory;is_scaled = true, special = nothing, elem = "U",scal
         
 
         ax = Axis(fig[1,1])
-        lines!(ax, [0,0], [-1000,1000],linestyle = :dash, color = :black, linewidth=3)
+        lines!(ax, [0,0], [-1000,10000],linestyle = :dash, color = :black, linewidth=3)
         
 
         
@@ -474,6 +502,7 @@ function save_fig(directory;is_scaled = true, special = nothing, elem = "U",scal
 
         if elem == "Th/U"
             ax.ylabel = elem
+            
         else
             ax.ylabel = elem*" (μg/g)"
         end
@@ -540,12 +569,12 @@ function make_ax!(ax,directory;is_scaled = true, special = nothing, elem = "U",s
     zrns = import_all(directory, is_scaled,special=special)
     
     if averagelines
-        plot_average_interval!(ax, zrns,10,elem,is_scaled = is_scaled, limits = false)
+        plot_average_interval!(ax, zrns,10,elem,is_scaled = is_scaled, limits = false, scaling=scaling)
     else
         
 
         
-        lines!(ax, [0,0], [-1000,1000],linestyle = :dash, color = :black, linewidth=2)
+        lines!(ax, [0,0], [-1000,10000],linestyle = :dash, color = :black, linewidth=2)
         
 
         
@@ -555,8 +584,10 @@ function make_ax!(ax,directory;is_scaled = true, special = nothing, elem = "U",s
             ax.xlabel = "x (arbitrary scale)"
         end
 
-        if elem == "Th/U"
+        if elem == "Th/U" 
             ax.ylabel = elem
+        elseif contains(elem,"age")
+            ax.ylabel = elem*" (Ma)"
         else
             ax.ylabel = elem*" (μg/g)"
         end
@@ -617,6 +648,91 @@ function make_ax!(ax,directory;is_scaled = true, special = nothing, elem = "U",s
     
 end
 
+function make_ratio_ax!(ax,directory;is_scaled = true, special = nothing, num = "Dy",den="Yb",scaling = nothing)
+
+
+    zrns = import_all(directory, is_scaled,special=special)
+    
+   ratio = num*"/"*den
+    for zrn in zrns
+     
+        zrn.tes[!,ratio] = zrn.tes[!,Regex(num*"\\d+")][!,1]./zrn.tes[!,Regex(den*"\\d+")][!,1]
+        # @show zrn.tes[!,ratio]
+        filter!(Symbol(ratio) => r -> -Inf < r < Inf,zrn.tes)
+        # @show zrn.tes[!,ratio]
+    end
+    
+    
+    lines!(ax, [0,0], [-1000,10000],linestyle = :dash, color = :black, linewidth=2)
+    
+
+    
+
+    ax.xlabel = "x (μm)"
+    if is_scaled
+        ax.xlabel = "x (arbitrary scale)"
+    end
+
+    
+    ax.ylabel = ratio
+    
+    changeElem!(zrns,ratio,ax,is_scaled)
+    
+    for zrn in zrns
+        lines!(ax,zrn.x,zrn.y,linewidth=2, label = zrn.name)
+    end
+
+    
+    # xMax = round(xmax,sigdigits=2)
+    # xInterval = 40
+    # if xmax <240
+    #     xInterval = 20
+    #     if xMax <120
+    #         xInterval = 10
+    #         if xMax <= 60
+    #             xInterval = 5
+    #             if xMax <= 25
+    #                 xInterval = 2
+    #             end
+    #         end
+    #     end    
+    # end
+    # ax.xticks = 0:xInterval:xMax
+    # xlims!(ax,0,xmax)
+
+    maxy = 0
+    minx = Inf
+    maxx = -Inf
+    for rim in zrns
+
+        if maximum(rim.y[])> maxy
+            maxy = maximum(rim.y[])
+        end
+
+        if minimum(rim.x[]) < minx
+            minx = minimum(rim.x[])
+        end
+
+        if maximum(rim.x[]) > maxx
+            maxx = maximum(rim.x[])
+        end
+
+    end
+
+    ylims!(ax,0,maxy)
+    # xlims!(ax,minx,maxx)
+    
+
+    if !isnothing(scaling)
+        ylims!(ax,scaling[1],scaling[2])
+    end
+    
+    
+    ax.xticklabelsvisible = false
+    # axislegend(ax,framevisible = false)
+    
+end
+
 # GLMakie.activate!()
 set_theme!(myTheme)
 # zrns = init_fig("ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26")
@@ -635,35 +751,48 @@ set_theme!(myTheme)
 
 f = Figure()
 
-ax1 = Axis(f[1,1],aspect=1.5)
-make_ax!(ax1,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "U")
-ax1.xlabelvisible = false
-ax2 = Axis(f[1,2],aspect=1.5)
-make_ax!(ax2,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Th",scaling = (-5,50))
-ax2.xlabelvisible = false
-ax3 = Axis(f[2,1],aspect=1.5)
-make_ax!(ax3,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Y",averagelines = true)
-ax3.xlabelvisible = false
-ax4 = Axis(f[2,2],aspect=1.5)
-make_ax!(ax4,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Yb",averagelines = true)
-ax5 = Axis(f[3,1],aspect=1.5)
-make_ax!(ax5,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Th/U")
+# ax1 = Axis(f[1,1],aspect=1.5)
+# make_ax!(ax1,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "U")
+# ax1.xlabelvisible = false
+# ax2 = Axis(f[1,2],aspect=1.5)
+# make_ax!(ax2,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Th",scaling = (-5,50))
+# ax2.xlabelvisible = false
+ax4 = Axis(f[1,1],aspect=1.5)
+make_ax!(ax4,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Y",averagelines = true)
+ax4.xlabelvisible = false
+ax5 = Axis(f[2,1],aspect=1.5)
+make_ax!(ax5,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Yb",averagelines = true)
+# ax3 = Axis(f[1,2],aspect=1.5)
+# make_ax!(ax3,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Th/U")
+# ax3.xlabelvisible = false
 
+# ax1 = Axis(f[1,1],aspect=1.5)
+# make_ax!(ax1,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Final Pb206/U238 age",scaling = (900,1400),averagelines = true)
+# ax1.xlabelvisible = false
+# ax2 = Axis(f[2,1],aspect=1.5)
+# make_ax!(ax2,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Final Pb207/U235 age",scaling = (900,1400),averagelines = true)
+# ax2.xlabelvisible = false
+# ax3 = Axis(f[3,1],aspect=1.5)
+# make_ax!(ax3,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", elem = "Final Pb207/Pb206 age",scaling = (900,1400),averagelines = true)
+
+
+# ax6 = Axis(f[3,2],aspect=1.5)
+# make_ratio_ax!(ax6,"ZrnLaserPlots/20SD06/TransectScaling2/",is_scaled=true, special = "Zrn26", num="Yb",den="Gd")
 # colsize!()
 rowsize!(f.layout,1,Fixed(300))
 rowsize!(f.layout,2,Fixed(300))
-rowsize!(f.layout,3,Fixed(300))
+# rowsize!(f.layout,3,Fixed(300))
 colsize!(f.layout,1,Fixed(450))
-colsize!(f.layout,2,Fixed(450))
+# colsize!(f.layout,2,Fixed(450))
 
 f[1:2,3] = Legend(f,ax1)
-text!(ax1, 0.03,0.85,text="A",fontsize=36,space = :relative,offset = (4, 0))
-text!(ax2, 0.03,0.85,text="B",fontsize=36,space = :relative,offset = (4, 0))
-text!(ax3, 0.03,0.85,text="C",fontsize=36,space = :relative,offset = (4, 0))
-text!(ax4, 0.03,0.85,text="D",fontsize=36,space = :relative,offset = (4, 0))
-text!(ax5, 0.03,0.85,text="E",fontsize=36,space = :relative,offset = (4, 0))
+text!(ax4, 0.03,0.85,text="A",fontsize=36,space = :relative,offset = (4, 0))
+text!(ax5, 0.03,0.85,text="B",fontsize=36,space = :relative,offset = (4, 0))
+# text!(ax3, 0.03,0.85,text="C",fontsize=36,space = :relative,offset = (4, 0))
+# text!(ax4, 0.03,0.85,text="D",fontsize=36,space = :relative,offset = (4, 0))
+# text!(ax5, 0.03,0.85,text="E",fontsize=36,space = :relative,offset = (4, 0))
 
 resize_to_layout!(f)
 
 
-save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","LasTEsB.svg"),f)
+save(joinpath("ZrnLaserPlots/20SD06/TransectScaling2/","YREE.svg"),f)

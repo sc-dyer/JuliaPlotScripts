@@ -7,16 +7,18 @@ schemes = [myColours,myColours2]
 colourscheme = schemes[colourchoice]
 myTheme = Theme(
     fonts = (; regular = "B612", bold = "B612-Bold"),
-    fontsize = 20,
+    fontsize = 14,
     palette = (;color =colourscheme,marker = [:circle,:rect,:diamond,:cross, :xcross,:utriangle,:star5,:star8, ],linestyle=[:solid,(:dot,:dense)]),
     Poly = (;cycle = [:color]),
     Scatter = (;cycle = [:color,:marker],markersize = 15),
     BoxPlot = (;cycle = [:color]),
     Lines = (;cycle = [:color,:linestyle]),
     ScatterLines = (;cycle = [:color,:linestyle]),
+    TernaryScatter = (;cycle=[:color]),
+    Errorbars = (;cycle = [:color]),
     Axis = ( 
-        xlabelsize = 28,
-        ylabelsize = 28,
+        xlabelsize = 16,
+        ylabelsize = 16,
         xminorticksvisible = true,
         yminorticksvisible = true,
         xticksmirrored = true,

@@ -72,7 +72,7 @@ zrnData =  DataFrame(CSV.File(raw"/home/scdyer/Documents/Waterloo/SEM/Zircon CL/
 # zrnData = dropmissing(zrnData)
 
 fig = Figure()
-ax = Axis(fig[1,1],aspect=DataAspect())
+ax = Axis(fig[1,1],aspect=1.0)
 # hist!(zrnData[!,"a (μm)"], strokewidth = 1, strokecolor = :black, bins = 20)
 
 # zrnData[!,:nndist] = nn_distance(zrnData)
@@ -98,10 +98,17 @@ ax = Axis(fig[1,1],aspect=DataAspect())
 # # plotValues(zrnData, "a0 (μm)", "a-a0",ax,fig,"20SD06_Areas")
 # plotValues(zrnData, "X (mm)", "Y (mm)",ax,fig,"20SD06_XY")
 
-zrnData2 =  DataFrame(CSV.File(raw"/home/scdyer/Documents/Waterloo/SEM/Zircon CL/ZrnMeasurements/20SD06_reduced.csv"))
-scatter!(zrnData[!,"X (mm)"],zrnData[!,"Y (mm)"],color = myColours[2])
-scatter!(zrnData2[!,"X (mm)"],zrnData2[!,"Y (mm)"],color = myColours[3])
-text!(zrnData2[!,"X (mm)"],zrnData2[!,"Y (mm)"].+0.2,text=zrnData2[!,:Zircon],align = (:center,:bottom))
-ax.xlabel = "X (mm)"
-ax.ylabel = "Y (mm)"
-save("ZrnPlots/20SD06_XY_special.svg",fig)
+# zrnData2 =  DataFrame(CSV.File(raw"/home/scdyer/Documents/Waterloo/SEM/Zircon CL/ZrnMeasurements/20SD06_reduced.csv"))
+# scatter!(zrnData[!,"X (mm)"],zrnData[!,"Y (mm)"],color = myColours[2])
+# scatter!(zrnData2[!,"X (mm)"],zrnData2[!,"Y (mm)"],color = myColours[3])
+# text!(zrnData2[!,"X (mm)"],zrnData2[!,"Y (mm)"].+0.2,text=zrnData2[!,:Zircon],align = (:center,:bottom))
+# ax.xlabel = "X (mm)"
+# ax.ylabel = "Y (mm)"
+dropmissing!(zrnData,"Core Area (μm^2)")
+lines!(ax,[0,250],[0,250],color=:black,linestyle=:dash)
+scatter!(zrnData[!,"a0 (μm)"],zrnData[!,"a (μm)"],markersize =8,strokewidth = 0.5)
+xlims!(ax,0,250)
+ylims!(ax,0,250)
+ax.xlabel = "a0 (μm)"
+ax.ylabel = "a (μm)"
+save("ZrnPlots/20SD06_miyazakiplot.svg",fig)

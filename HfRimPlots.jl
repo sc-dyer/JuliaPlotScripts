@@ -6,7 +6,8 @@ using Loess
 using NativeFileDialog
 
 const FIG_SIZE = (1200,900)
-colorchoice = 2
+const SPECIAL_SCALE = 40
+colourchoice = 2
 include("PlotDefaults.jl")
 
 mutable struct RimData
@@ -297,7 +298,7 @@ function save_fig(directory,probefile,savedir;is_scaled = true, special = nothin
 
     fig = Figure(size = FIG_SIZE)
 
-    ax = Axis(fig[1,1])
+    ax = Axis(fig[1,1],aspect=1.5)
     lines!(ax, [0,0], [-1000,1000],linestyle = :dash, color = :black, linewidth=3)
     zrns, xmax = import_all(directory, probefile,is_scaled, special = special)
 
@@ -340,7 +341,6 @@ function save_fig(directory,probefile,savedir;is_scaled = true, special = nothin
     end
     ymax = round(1.05*maxy,digits = 1)
     ymin = round(miny-0.05*maxy,digits = 1)
-    @show ymax, ymin
     ylims!(ax,ymin,ymax)
     # xlims!(ax,minx,maxx)
     ax.xticklabelsvisible = false
