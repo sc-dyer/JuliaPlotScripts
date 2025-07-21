@@ -1,4 +1,4 @@
-using GLMakie
+using CairoMakie
 using TernaryDiagrams
 using DataFrames
 using CSV
@@ -7,7 +7,7 @@ using Migmatites
 using JLD2
 colourchoice=2
 include("../PlotDefaults.jl")
-markers = [:circle,:rect,:utriangle,:cross]
+markers = [:diamond,:utriangle,:cross,:dtriangle]
 # @recipe(TernaryText, x, y, z) do scene
 #     Attributes(
 #         text = "", 
@@ -16,6 +16,46 @@ markers = [:circle,:rect,:utriangle,:cross]
 #     )
 # end
 
+function outputmeltcompo(maindir,sourcename,host,pindex)
+
+    meltdf = DataFrame(ExtractT = Float64[],
+                        SourceH2O = Float64[],
+                        SiO2 = Float64[],
+                        Al2O3 = Float64[], 
+                        FeO = Float64[],
+                        MgO = Float64[],
+                        CaO = Float64[],
+                        Na2O = Float64[],
+                        K2O = Float64[],
+                        TiO2 = Float64[],
+                        H2O = Float64[],
+                        O2 = Float64[])
+
+    for i in 1:lastindex(pindex)
+        
+        
+        data = load(joinpath(maindir,sourcename*"_source_"*host*"_host_750/","outputs_x"*string(pindex[i])*".jld2"))
+        melts = data["melts_f"]
+        extractT = data["extract_T"]
+        sourceH2O=  round(massfrac(getcompo(data["system_steps"][1]),"H2O")*100,sigdigits = 2)
+        for i in 1:lastindex(melts)
+            meltcompo = getcompo(melts[i])
+            SiO2 = mol(getchemical(meltcompo,"SiO2"))
+            Al2O3 = mol(getchemical(meltcompo,"Al2O3"))
+            FeO = mol(getchemical(meltcompo,"FeO"))
+            MgO = mol(getchemical(meltcompo,"MgO"))
+            CaO = mol(getchemical(meltcompo,"CaO"))
+            Na2O = mol(getchemical(meltcompo,"Na2O"))
+            K2O = mol(getchemical(meltcompo,"K2O"))
+            TiO2 = mol(getchemical(meltcompo,"TiO2"))
+            H2O = mol(getchemical(meltcompo,"H2O"))
+            O2 = mol(getchemical(meltcompo,"O2"))
+            push!(meltdf,[extractT[i],sourceH2O,SiO2,Al2O3,FeO,MgO,CaO,Na2O,K2O,TiO2,H2O,O2])
+        end
+        
+    end
+    CSV.write(joinpath(maindir,sourcename*"_meltdata.csv"),meltdf)
+end
 
 function solarbrowntern(maindir,sourcename,host,pindex)
     fig = Figure()
@@ -73,7 +113,7 @@ function solarbrowntern(maindir,sourcename,host,pindex)
             z = (fe .+ ti .+ mg)./norm
 
             sourceh2o =  round(massfrac(getcompo(data[j]["system_steps"][1]),"H2O")*100,sigdigits = 2)
-            grouplabel = string(sourceh2o)*" wt% H2o - "*string(temps[j])*"°C"
+            grouplabel = string(sourceh2o)*" wt% H2O - "*string(temps[j])*"°C"
             ternaryscatter!(ax,x,y,z,label = grouplabel, color = myColours2[j],markersize = 6,strokewidth = 0.5,marker =markers[i])
 
             templabels = string.(data[j]["extract_T"]).*"°C"
@@ -81,8 +121,8 @@ function solarbrowntern(maindir,sourcename,host,pindex)
         end
     end
     
-    # fig[1,2] = Legend(fig,ax)
-    # save(joinpath(maindir,sourcename*"solarbrowntern.svg"),fig)
+    fig[1,2] = Legend(fig,ax)
+    save(joinpath(maindir,sourcename*"solarbrowntern.svg"),fig)
     return fig
 end
 
@@ -222,6 +262,7 @@ function barkertern(filename,savedir)
     fig[1,2] = Legend(fig,ax)
     save(joinpath(savedir,"barkertern_text.svg"),fig)
 end
-f = migtern("MeltPathPlots/","23SD03B","23SD03B",[2,3,5,10])
+# solarbrowntern("MeltPathPlots/","23SD03B","23SD03B",[2,3,5,10])
+# solarbrowntern("MeltPathPlots/","23SD20A","23SD20A",[2,3,5,10])
 # barkertern("../../Geochem/FluidFlux_CIPWnorm2.csv","TernPlots/")
-
+outputmeltcompo("MeltPathPlots/","23SD03B","23SD03B",[2,3,5,10])

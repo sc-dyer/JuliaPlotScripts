@@ -3,7 +3,8 @@
 myColours = ["#000000","#E69F00","#56B4E9","#009E73","#0072B2","#D55E00","#CC79A7"]
 colourscheme = myColours
 myColours2 = ["#E69F00","#56B4E9","#009E73","#0072B2","#D55E00","#CC79A7","#000000"]#"#F0E442"
-schemes = [myColours,myColours2]
+myColours3 = ["#E69F00","#0072B2","#CC79A7","#56B4E9","#009E73","#D55E00","#000000"]
+schemes = [myColours,myColours2,myColours3]
 colourscheme = schemes[colourchoice]
 myTheme = Theme(
     fonts = (; regular = "B612", bold = "B612-Bold"),

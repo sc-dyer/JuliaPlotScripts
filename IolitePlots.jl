@@ -4,7 +4,7 @@ using CSV
 using Statistics
 # using FileIO
 # using Gtk
-colourchoice=2
+colourchoice=3
 include("PlotDefaults.jl")
 DEFAULT_NORM = DataFrame(Element = ["Rb","Sr","Y","La","Ce","Pr","Nd","Sm","Eu","Gd","Tb","Dy","Ho","Er","Tm","Yb","Lu"],Concentration = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0])
 function filterSampleName(df::DataFrame,sampleName::String)
@@ -97,7 +97,7 @@ end
 function plotSpider!(sampleData::DataFrame,comparisonData::DataFrame,ax::Axis,fig::Figure,selectionIndex::Integer,selectionLabel::String)
 
     # elemError = Array{Float64}([])
-    
+    eu_anom_avg = 0.0
     for sample in eachrow(sampleData)
         x = Array{Int64}([])
         elemRatio = Array{Float64}([])
@@ -114,9 +114,12 @@ function plotSpider!(sampleData::DataFrame,comparisonData::DataFrame,ax::Axis,fi
         end
         # push!(elemError,em[:Error]/el[:Concentration])
         lines!(ax,x,NaNIfNotPositive.(elemRatio),linewidth = 1, color = Cycled(selectionIndex), label = selectionLabel)
-           
+        
+        
+       
     end
-    
+   
+
     # [delete!(leg) for leg in fig.content if leg isa Legend]
     
     
@@ -127,8 +130,11 @@ function calcEuAnomaly!(sampleData::DataFrame,normData::DataFrame)
     normSm = filter([:Element]=>norm -> occursin("Sm",norm),normData)[1,:Concentration]
     normGd = filter([:Element]=>norm -> occursin("Gd",norm),normData)[1,:Concentration]
     normEu = filter([:Element]=>norm -> occursin("Eu",norm),normData)[1,:Concentration]
-    
-    sampleData[!,:Eu_EuA] = (sampleData[!,r"Eu\d+.+mean"][!,1] / normEu)./sqrt.((sampleData[!,r"Sm\d+.+mean"][!,1] / normSm).*(sampleData[!,r"Gd\d+.+mean"][!,1] / normGd))
+    try
+        sampleData[!,:Eu_EuA] = (sampleData[!,r"Eu\d+.+mean"][!,1] / normEu)./sqrt.((sampleData[!,r"Sm\d+.+mean"][!,1] / normSm).*(sampleData[!,r"Gd\d+.+mean"][!,1] / normGd))
+    catch
+        sampleData[!,:Eu_EuA] = (sampleData[!,r"Eu"][!,1] / normEu)./sqrt.((sampleData[!,r"Sm"][!,1] / normSm).*(sampleData[!,r"Gd"][!,1] / normGd))
+    end
 end
 
 function normElem!(sampleData::DataFrame,normData::DataFrame,elem::String)
@@ -148,6 +154,7 @@ end
 
 function plotsamples(df, samplelists, norm, normname)
     fig, axs = initSpiderFigs(normname,norm,[2,2])
+    calcEuAnomaly!(df,norm)
     for i in 1:lastindex(samplelists)
         samples = samplelists[i]
         row = Integer(trunc(i/2)+i%2)
@@ -155,7 +162,10 @@ function plotsamples(df, samplelists, norm, normname)
        
         ax = axs[row,col]
         for j in 1:lastindex(samples)
-            plotSpider!(filterSampleName(df,samples[j]),norm,ax,fig,j,samples[j])
+            println(samples[j])
+            sampledf = filterSampleName(df,samples[j])
+            println("Eu/Eu* = ",mean(sampledf[!,:Eu_EuA]))
+            plotSpider!(sampledf,norm,ax,fig,j,samples[j])
             
         end
         axislegend(ax,framevisible = false,merge = true,position = :rb)
@@ -174,23 +184,23 @@ set_theme!(myTheme)
 #     "23SD03J-2","23SD20B","23SD20C","23SD20D","23SD20F","23SD20G"]
 
 # outcrop1 = ["21SD08-2","21SD08-3","23SD02B-1"]
-outcrop2 = ["23SD03C-1","23SD03C-3","23SD03E"]
-outcrop3 = ["22SD55B3","22SD55D","22SD55E"]
+outcrop2 = ["23SD03C-3","23SD03C-1","23SD03E"]
+outcrop3 = ["22SD55E","22SD55B3","22SD55D"]
 outcrop4 = ["23SD20B","23SD20C","23SD20F","23SD20G"]
 migmatites = ["2M02061A","2M02061B","2M0506-16_2","2M0506-16_3B"]
 norm = DataFrame(CSV.File("chondrite.csv"))
 ampData = DataFrame(CSV.File("../../LAICPMS/AmphiboleData_UpdatedSi/Amphiboles.csv"))
 geochemData = DataFrame(CSV.File("../../Geochem/FluidFlux_BRCb.csv"))
 
-# fig = plotsamples(ampData,[outcrop2,outcrop3,outcrop4,migmatites],norm,"chondrite")
+fig = plotsamples(ampData,[outcrop2,outcrop3,outcrop4,migmatites],norm,"chondrite")
 # save("SpiderPlots/AmphiboleTEs.svg",fig)
 
 outcrop1 = ["23SD02B-1","23SD02B-5","21SD08"]
-outcrop2 = ["23SD03C-1","23SD03C-5","23SD03E"]
-outcrop3 = ["22SD55B","22SD55D","22SD55E"]
-outcrop4 = ["23SD20B","23SD20C","23SD20D","23SD20F","23SD20G"]
-fig = plotsamples(geochemData,[outcrop1,outcrop2,outcrop3,outcrop4],norm,"chondrite")
-save("SpiderPlots/BRC_TEs.svg",fig)
+outcrop2 = ["23SD03C-5","23SD03C-1","23SD03E"]
+outcrop3 = ["22SD55E","22SD55B","22SD55D"]
+outcrop4 = ["23SD20B","23SD20C","23SD20F","23SD20G"]
+fig = plotsamples(geochemData,[outcrop2,outcrop3,outcrop4,outcrop1],norm,"chondrite")
+# save("SpiderPlots/BRC_TEs.svg",fig)
 # calcEuAnomaly!(ampData,norm) 
 # sumREEs!(ampData)
 

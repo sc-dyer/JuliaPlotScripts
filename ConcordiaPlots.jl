@@ -4,6 +4,7 @@ using DataFrames
 using CSV
 using Peaks
 using KernelDensity
+using AlgebraPDF
 using Isoplot
 colourchoice = 2
 include("PlotDefaults.jl")
@@ -75,24 +76,98 @@ function make_concordia_plot!(ax::Axis,pegdf::DataFrame,t1,t2;calcdiscordia = fa
     # plot!.(ax,rim_analyses,color = (colourscheme[2], 0.5),label = "Rims")
 end
 
-function inset_kde!(ax::Axis,coredf::DataFrame,rimdf::DataFrame; plotcore = true, plotrim = true)
+function inset_kde!(ax::Axis,coredf::DataFrame,rimdf::DataFrame; plotcore = true, plotrim = true, agetype = "ConcordiaAge")
     rim_concordant, rim_discordant = filterdiscordance(rimdf)
     core_concordant, core_discordant = filterdiscordance(coredf)
-    
-    dates::Array{Float64} = rim_concordant[!,:Pb206U238Age]
+    errortype = agetype*"_se1"
+    dates::Array{Float64} = rim_concordant[!,agetype]
+    errors::Array{Float64} = rim_concordant[!,errortype]
     if plotcore == true
-        dates = [dates;core_concordant[!,:Pb206U238Age]]
+        dates = [dates;core_concordant[!,agetype]]
+        errors = [errors;core_concordant[!,errortype]]
         if plotrim == false
-            dates = core_concordant[!,:Pb206U238Age]
+            dates = core_concordant[!,agetype]
+            errors = core_concordant[!,errortype]
         end
     end
-    density!(ax,dates, color = myColours[3])
+
+    density!(ax,dates, color = colourscheme[3])
     kernal = kde(dates)
     peaks = findmaxima(kernal.density)
     peak_ages = getindex(kernal.x,peaks.indices)
     scatter!(ax,peak_ages,peaks.heights,marker = :vline)
-    text!(ax,peak_ages,peaks.heights,text=string.(Int.(round.(peak_ages))),color=:black,fontsize=8,offset = (5,0))
+    text!(ax,peak_ages,peaks.heights,text="ca. ".*string.(Int.(round.(peak_ages,sigdigits=3))),color=:black,fontsize=8,offset = (5,0))
     ylims!(ax,0,1.1*maximum(kernal.density))
+end
+
+function inset_pdf!(ax::Axis,coredf::DataFrame,rimdf::DataFrame; plotcore = true, plotrim = true, agetype = "ConcordiaAge")
+    rim_concordant, rim_discordant = filterdiscordance(rimdf)
+    core_concordant, core_discordant = filterdiscordance(coredf)
+    
+   
+
+    errortype = agetype*"_se1"
+    dates::Array{Float64} = rim_concordant[!,agetype]
+    errors::Array{Float64} = rim_concordant[!,errortype]
+    if plotcore == true
+        dates = [dates;core_concordant[!,agetype]]
+        errors = [errors;core_concordant[!,errortype]]
+        if plotrim == false
+            dates = core_concordant[!,agetype]
+            errors = core_concordant[!,errortype]
+        end
+    end
+    # gausses = Normalized[]
+    # keys = ()
+    # weights = ()
+    # weight = 1/length(dates)
+   
+
+    # for i in 1:lastindex(dates)
+    #     gauss = FGauss((μ=dates[i],σ=errors[i]))
+    #     @show dates[i], errors[i]
+    #     ngauss = Normalized(gauss,(800,1600))
+    #     keys = (keys..., Symbol("N"*string(i)))
+    #     weights = (weights..., weight)
+    #     push!(gausses,ngauss)
+    # end
+    # ns = (;zip(keys,weights)...)   
+    # model = FSum([g for g in gausses],ns)
+
+    # g1 = FGauss((μ=dates[1],σ=errors[1]))
+    # g2 = FGauss((μ=dates[2],σ=errors[2]))
+    # ng1 = Normalized(g1,(800,1600))
+    # ng2 = Normalized(g2,(800,1600))
+    # weight = 0.5
+    # model = ng1 * (N1 = weight,) + ng2 * (N2 = weight,)
+    # for i in 3:lastindex(dates)
+    #     gnew = FGauss((μ=dates[i],σ=errors[i]))
+    #     ngnew = Normalized(gnew,(800,1600))
+    #     iweight = 1/i
+    #     otherweight = 1-1/i
+    #     model = model * (N1 = otherweight,) + ngnew * (N2 = iweight,)
+    # end
+
+    g1 = FGauss((μ=dates[1],σ=errors[1]))
+    ng1 = Normalized(g1,(800,1600))
+    model = ng1(800:1:1600)
+    for i in 2:lastindex(dates)
+        gnew = FGauss((μ=dates[i],σ=errors[i]))
+        ngnew = Normalized(gnew,(800,1600))
+        iweight = 1/i
+        otherweight = 1-1/i
+        modeladd = ngnew(800:1:1600)
+        model = iweight .* modeladd .+ otherweight .* model
+    end
+    xs = range(800,1600,801)
+    
+    peaks = findmaxima(model)
+    peak_ages = getindex(xs,peaks.indices)
+    lines!(ax,xs,model, color = colourscheme[3])
+
+    scatter!(ax,peak_ages,peaks.heights,marker = :vline)
+    text!(ax,peak_ages,peaks.heights,text="ca. ".*string.(Int.(round.(peak_ages,sigdigits=3))),color=:black,fontsize=8,offset = (5,0))
+    ylims!(ax,0,1.1*maximum(peaks.heights))
 end
 
 function inset_kde!(ax::Axis,pegdf::DataFrame;calcdiscordia = false)
@@ -163,7 +238,7 @@ function zrnpaper_plots()
             # text!(isoplot_ax,1.75,0.25, text = labels[i,j],fontsize=24)
             axislegend(isoplot_ax, merge = true,labelsize = 12,framevisible = false,halign =0.02,valign=0.85)
             density_ax = Axis(fig[i,j],
-                            title = rich(superscript("206"),"Pb/",superscript("238"),"U age KDE"),
+                            title = "Concordia age KDE",
                             titlesize = 10,
                             aspect = 1,
                             xticklabelsize = 8,
@@ -189,11 +264,12 @@ function zrnpaper_plots()
                             valign = 0.15, 
                             backgroundcolor=:white)
 
-            if i == 2 && j == 1
-                inset_kde!(density_ax,coredf[i,j],rimdf[i,j], plotrim = false)
-            else
-                inset_kde!(density_ax,coredf[i,j],rimdf[i,j])
-            end
+            # if i == 2 && j == 1
+            #     inset_kde!(density_ax,coredf[i,j],rimdf[i,j],plotrim=false)
+            # else
+            #     inset_kde!(density_ax,coredf[i,j],rimdf[i,j])
+            # end
+            inset_kde!(density_ax,coredf[i,j],rimdf[i,j])
             xlims!(density_ax,800,1600)
             
         end
@@ -215,7 +291,7 @@ function zrnpaper_plots()
     # text!(density_ax,peak_ages,peaks.heights,text=string.(Int.(round.(peak_ages))),color=:black,fontsize=8,offset = (5,0))
     # ylims!(density_ax,0,1.1*maximum(kernal.density))
     # scatter!(density_ax,maxima_helper.())
-    CairoMakie.save("ConcordiaPlots/UPb_Plots_v9.svg",fig)
+    CairoMakie.save("ConcordiaPlots/UPb_Plots_v17.svg",fig)
     # display(GLMakie.Screen(),fig)
 
     # GLMakie.save("ConcordiaPlots/UPb_Plots.png",fig,px_per_unit = 4)

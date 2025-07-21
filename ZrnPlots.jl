@@ -7,6 +7,8 @@ using CairoMakie
 using Clustering
 using Distances
 using NearestNeighbors
+using CurveFit
+
 colourchoice = 2
 # myColours = ["#FF8CA6","#6D8FFF","#F9C52A","#A9EFA5", "#E6A7FB","#000000","#FF0000","#008000","#0000FF","#4B0082","#FF8C00"]
 include("PlotDefaults.jl")
@@ -107,8 +109,14 @@ ax = Axis(fig[1,1],aspect=1.0)
 dropmissing!(zrnData,"Core Area (μm^2)")
 lines!(ax,[0,250],[0,250],color=:black,linestyle=:dash)
 scatter!(zrnData[!,"a0 (μm)"],zrnData[!,"a (μm)"],markersize =8,strokewidth = 0.5)
+text!(ax, 0.05,0.87,text="n = 165",fontsize=24,space = :relative,offset = (4, -2))
 xlims!(ax,0,250)
 ylims!(ax,0,250)
-ax.xlabel = "a0 (μm)"
-ax.ylabel = "a (μm)"
-save("ZrnPlots/20SD06_miyazakiplot.svg",fig)
+fit = linear_fit(zrnData[!,"a0 (μm)"],zrnData[!,"a (μm)"])
+y_fit = fit[1].+fit[2].*range(0.0,250.0)
+lines!(ax,range(0.0,250.0),y_fit,color = myColours[4], linestyle =:dashdot)
+linestring = "a = "*string(round(fit[2],digits=2))*"a0 + "*string(round(fit[1],digits = 2))
+text!(ax, 125,200,text = linestring,fontsize=16,space=:data,color=myColours[4])
+ax.xlabel = "Zircon core size (a0 (μm))"
+ax.ylabel = "Total zircon size (a (μm))"
+save("ZrnPlots/20SD06_miyazakiplotB.svg",fig)

@@ -2,9 +2,13 @@ using CairoMakie
 using TernaryDiagrams
 using DataFrames
 using CSV
-const MY_CATS = ["Host","Selvage","Pegmatite"]
-const SLAGSTAD_CATS = ["Granodiorite mesosome","Stromatic leucosome","Slagstad pegmatite","Diorite mesosome", "Patch leucosome"]
+# const MY_CATS = ["Host","Selvage","Pegmatite"]
+const MY_CATS = ["Starting Material","BPQ825","BPQ850","BPQ900"]
+# const MY_CATS = ["Source H2O = 0.32", "Source H2O = 0.63","Source H2O = 1.3","Source H2O = 2.8"]
+# const SLAGSTAD_CATS = ["Granodiorite mesosome","Stromatic leucosome","Slagstad pegmatite","Diorite mesosome", "Patch leucosome"]
+const SLAGSTAD_CATS = ["HighH2O800","HighH2O875","HighH2O900"]
 colourchoice=2
+const MY_MARKERS = [:cross,:dtriangle]#:diamond,:utriangle]#]
 include("PlotDefaults.jl")
 
 # @recipe(TernaryText, x, y, z) do scene
@@ -15,7 +19,7 @@ include("PlotDefaults.jl")
 #     )
 # end
 
-function solarbrowntern(filename,savedir)
+function solarbrowntern(filename,savedir;savename = "")
     fig = Figure();
     ax = Axis(fig[1, 1], aspect = 1.0);
     
@@ -55,22 +59,23 @@ function solarbrowntern(filename,savedir)
         cat = SLAGSTAD_CATS[i]
         
         gdfiltered = filter(:Category => c -> c == cat, gdf)
-        ternaryscatter!(ax,gdfiltered[!,:NC],gdfiltered[!,:K],gdfiltered[!,:FMT], label = cat, color = myColours2[i],markersize = 6,marker=:rect,strokewidth = 0.5)
+        ternaryscatter!(ax,gdfiltered[!,:NC],gdfiltered[!,:K],gdfiltered[!,:FMT], label = cat, color = myColours2[i],markersize = 6,marker=MY_MARKERS[1],strokewidth = 0.5)
+        ternarytext!(ax,gdfiltered[!,:NC],gdfiltered[!,:K],gdfiltered[!,:FMT],text = gdfiltered[!,:Sample],fontsize=2)
     end
 
     for i in 1:lastindex(MY_CATS)
         cat = MY_CATS[i]
         
         gdfiltered = filter(:Category => c -> c == cat, gdf)
-        ternaryscatter!(ax,gdfiltered[!,:NC],gdfiltered[!,:K],gdfiltered[!,:FMT], label = cat, color = myColours2[i],markersize = 6,marker=:circle,strokewidth = 0.5)
+        ternaryscatter!(ax,gdfiltered[!,:NC],gdfiltered[!,:K],gdfiltered[!,:FMT], label = cat, color = myColours2[i],markersize = 6,marker=MY_MARKERS[2],strokewidth = 0.5)
         ternarytext!(ax,gdfiltered[!,:NC],gdfiltered[!,:K],gdfiltered[!,:FMT],text = gdfiltered[!,:Sample],fontsize=2)
     end
     fig[1,2] = Legend(fig,ax)
-    save(joinpath(savedir,"solarbrowntern_text.svg"),fig)
+    save(joinpath(savedir,savename*"_solarbrowntern_text.svg"),fig)
 
 end
 
-function barkertern(filename,savedir)
+function barkertern(filename,savedir;savename = "")
     fig = Figure();
     ax = Axis(fig[1, 1], aspect = 1.0);
     
@@ -115,17 +120,19 @@ function barkertern(filename,savedir)
         cat = SLAGSTAD_CATS[i]
         
         gdfiltered = filter(:Category => c -> c == cat, gdf)
-        ternaryscatter!(ax,gdfiltered[!,:ab],gdfiltered[!,:or],gdfiltered[!,:an], label = cat, color = myColours2[i],markersize = 6,marker=:rect,strokewidth = 0.5)
+        ternaryscatter!(ax,gdfiltered[!,:ab],gdfiltered[!,:or],gdfiltered[!,:an], label = cat, color = myColours2[i],markersize = 6,marker=MY_MARKERS[1],strokewidth = 0.5)
+        ternarytext!(ax,gdfiltered[!,:ab],gdfiltered[!,:or],gdfiltered[!,:an],text = gdfiltered[!,:Sample],fontsize=2)
+
     end
     for i in 1:lastindex(MY_CATS)
         cat = MY_CATS[i]
         
         gdfiltered = filter(:Category => c -> c == cat, gdf)
-        ternaryscatter!(ax,gdfiltered[!,:ab],gdfiltered[!,:or],gdfiltered[!,:an], label = cat, color = myColours2[i],markersize = 6,marker=:circle,strokewidth = 0.5)
+        ternaryscatter!(ax,gdfiltered[!,:ab],gdfiltered[!,:or],gdfiltered[!,:an], label = cat, color = myColours2[i],markersize = 6,marker=MY_MARKERS[2],strokewidth = 0.5)
         ternarytext!(ax,gdfiltered[!,:ab],gdfiltered[!,:or],gdfiltered[!,:an],text = gdfiltered[!,:Sample],fontsize=2)
     end
     fig[1,2] = Legend(fig,ax)
-    save(joinpath(savedir,"barkertern_text2.svg"),fig)
+    save(joinpath(savedir,savename*"_barkertern_text.svg"),fig)
 end
 
 function transform_qapf_coords(a,p,q)
@@ -143,7 +150,7 @@ geta(vec) = vec[1]
 getp(vec) = vec[2]
 getq(vec) = vec[3
 ]
-function qapftern(filename,savedir)
+function qapftern(filename,savedir;savename="")
     fig = Figure();
     ax = Axis(fig[1, 1], aspect = 1.0);
     
@@ -219,8 +226,10 @@ function qapftern(filename,savedir)
         ternarytext!(ax,geta.(coords),getp.(coords),getq.(coords),text = gdfiltered[!,:Sample],fontsize=2)
     end
     fig[1,2] = Legend(fig,ax)
-    save(joinpath(savedir,"qapftern_text.svg"),fig)
+    save(joinpath(savedir,savename*"_qapftern_text.svg"),fig)
 end
-solarbrowntern("../../Geochem/FluidFlux_molpercent.csv","TernPlots/")
-barkertern("../../Geochem/FluidFlux_CIPWnorm2.csv","TernPlots/")
-qapftern("../../Geochem/FluidFlux_CIPWnorm2.csv","TernPlots/")
+# solarbrowntern("../../Geochem/23SD03B_meltdata.csv","TernPlots/",savename = "SourceMeltModel")
+# barkertern("../../Geochem/23SD03B_CIPW.csv","TernPlots/",savename = "SourceMeltModel")
+solarbrowntern("../../Geochem/ExperimentResults_molpercent.csv","TernPlots/",savename = "Experiments")
+barkertern("../../Geochem/ExperimentalCIPW.csv","TernPlots/",savename = "Experiments")
+# qapftern("../../Geochem/23SD03B_CIPW.csv","TernPlots/",savename = "SourceMeltModel")
